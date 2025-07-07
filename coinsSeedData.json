@@ -1,0 +1,22 @@
+﻿[
+  {
+    "value": 10,
+    "quantity": 1000
+  },
+  {
+    "value": 20,
+    "quantity": 1000
+  },
+  {
+    "value": 50,
+    "quantity": 1000
+  },
+  {
+    "value": 100,
+    "quantity": 1000
+  },
+  {
+    "value": 200,
+    "quantity": 1000
+  }
+]

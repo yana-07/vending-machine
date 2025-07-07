@@ -1,0 +1,92 @@
+﻿[
+  {
+    "name": "Water (500ml)",
+    "price": 1.00,
+    "quantity": 10,
+    "code": 10
+  },
+  {
+    "name": "Cola (330ml)",
+    "price": 1.50,
+    "quantity": 10,
+    "code": 20
+  },
+  {
+    "name": "Fanta (330ml)",
+    "price": 1.50,
+    "quantity": 10,
+    "code": 30
+  },
+  {
+    "name": "Ice Tea (peach)",
+    "price": 1.80,
+    "quantity": 10,
+    "code": 40
+  },
+  {
+    "name": "Energy Drink",
+    "price": 2.00,
+    "quantity": 8,
+    "code": 50
+  },
+  {
+    "name": "Snickers Bar",
+    "price": 1.20,
+    "quantity": 10,
+    "code": 60
+  },
+  {
+    "name": "KitKat",
+    "price": 1.20,
+    "quantity": 9,
+    "code": 70
+  },
+  {
+    "name": "Twix",
+    "price": 1.30,
+    "quantity": 10,
+    "code": 80
+  },
+  {
+    "name": "M&M’s (small pack)",
+    "price": 1.40,
+    "quantity": 10,
+    "code": 90
+  },
+  {
+    "name": "Kinder Bueno",
+    "price": 1.50,
+    "quantity": 10,
+    "code": 100
+  },
+  {
+    "name": "Croissant (choco)",
+    "price": 1.00,
+    "quantity": 10,
+    "code": 110
+  },
+  {
+    "name": "Sandwich (ham & cheese)",
+    "price": 2.50,
+    "quantity": 5,
+    "code": 120
+  },
+  {
+    "name": "Salty Sticks",
+    "price": 0.90,
+    "quantity": 10,
+    "code": 130
+  },
+  {
+    "name": "Potato Chips (small)",
+    "price": 1.60,
+    "quantity": 10,
+    "code": 140
+  },
+  {
+    "name": "Popcorn (microwave)",
+    "price": 1.80,
+    "quantity": 6,
+    "code": 150
+  }
+]
