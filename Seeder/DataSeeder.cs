@@ -1,5 +1,4 @@
-﻿
-using System.Text.Json;
+﻿using System.Text.Json;
 using VendingMachine.Data;
 
 namespace VendingMachine.Seeder;
