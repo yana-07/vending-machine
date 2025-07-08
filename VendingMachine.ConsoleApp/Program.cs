@@ -45,14 +45,15 @@ static IHostBuilder CreateHostBuilder(string[] args)
             .AddScoped<IDataSeeder, CoinDataSeeder>()
             .AddScoped<SeederCoordinator>()
             .AddScoped<IUserInteractor, ConsoleUserInteractor>()
+            .AddScoped<IUserService, UserService>()
             .AddScoped<IProductService, ProductService>()
             .AddScoped<ICoinService, CoinService>()
             .AddScoped<ICustomerService, CustomerService>()
             .AddScoped<IVendorService, VendorService>()
             .AddScoped<ITablePrinter<ProductPrintDto>, TablePrinter<ProductPrintDto>>();
 
-            services.Configure<UserRolesOptions>(context.Configuration.GetSection(nameof(UserRolesOptions)));
-            services.Configure<CoinsOptions>(context.Configuration.GetSection(nameof(CoinsOptions)));
+            services.Configure<UserRolesSettings>(context.Configuration.GetSection(nameof(UserRolesSettings)));
+            services.Configure<CoinsSettings>(context.Configuration.GetSection(nameof(CoinsSettings)));
         });
 
     return hostBuilder;
