@@ -1,16 +1,19 @@
-﻿using System.Text.Json;
+﻿using Microsoft.EntityFrameworkCore;
+using System.Text.Json;
 using VendingMachine.Data.Context;
 
 namespace VendingMachine.Data.Seed;
 
 public abstract class DataSeeder<T>(
-    VendingMachineDbContext dbContext) : IDataSeeder
+    VendingMachineDbContext dbContext) 
+    : IDataSeeder 
+    where T : class
 {
-    public abstract string FilePath { get; }
+    protected abstract string FilePath { get; }
 
     public async Task SeedAsync()
     {
-        if (dbContext.Products.Any())
+        if (dbContext.Set<T>().Any())
         {
             return;
         }
