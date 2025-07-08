@@ -4,7 +4,5 @@ namespace VendingMachine.Services.Services;
 
 public interface ICustomerService
 {
-    Task ShowProductsAsync();
-    Task<ProductRequestDto> RequestProductCodeAsync();
-    CoinRequestDto RequestCoin();
+    Task ServeCustomerAsync();
 }

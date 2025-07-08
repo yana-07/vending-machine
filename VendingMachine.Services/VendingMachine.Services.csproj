@@ -11,8 +11,4 @@
     <ProjectReference Include="..\VendingMachine.Data\VendingMachine.Data.csproj" />
   </ItemGroup>
 
-  <ItemGroup>
-    <Folder Include="Configuration\" />
-  </ItemGroup>
-
 </Project>
