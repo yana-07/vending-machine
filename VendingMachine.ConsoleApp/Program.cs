@@ -18,7 +18,6 @@ var serviceProvider = serviceScope.ServiceProvider;
 
 var dbContext = serviceProvider
     .GetRequiredService<VendingMachineDbContext>();
-await dbContext.Database.EnsureDeletedAsync();
 await dbContext.Database.MigrateAsync();
 
 var seederCoordinator = serviceProvider
@@ -48,12 +47,15 @@ static IHostBuilder CreateHostBuilder(string[] args)
             .AddScoped<IUserService, UserService>()
             .AddScoped<IProductService, ProductService>()
             .AddScoped<ICoinService, CoinService>()
+            .AddScoped<IChangeService, ChangeService>()
             .AddScoped<ICustomerService, CustomerService>()
             .AddScoped<IVendorService, VendorService>()
-            .AddScoped<ITablePrinter<ProductPrintDto>, TablePrinter<ProductPrintDto>>();
+            .AddScoped<ITablePrinter, TablePrinter>();
 
-            services.Configure<UserRolesSettings>(context.Configuration.GetSection(nameof(UserRolesSettings)));
-            services.Configure<CoinsSettings>(context.Configuration.GetSection(nameof(CoinsSettings)));
+            services.Configure<UserRolesSettings>(
+                context.Configuration.GetSection(nameof(UserRolesSettings)));
+            services.Configure<CoinsSettings>(
+                context.Configuration.GetSection(nameof(CoinsSettings)));
         });
 
     return hostBuilder;
