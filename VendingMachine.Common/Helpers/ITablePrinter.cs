@@ -1,6 +1,6 @@
 ﻿namespace VendingMachine.Common.Helpers;
 
-public interface ITablePrinter<T>
+public interface ITablePrinter
 {
-    void Print(IEnumerable<T> items);
+    void Print<T>(IEnumerable<T> items);
 }

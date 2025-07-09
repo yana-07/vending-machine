@@ -12,7 +12,7 @@ public class CustomerService(
     IProductService productService,
     IChangeService changeService,
     IOptions<CoinsSettings> coinsConfiguration,
-    ITablePrinter<ProductPrintDto> tablePrinter)
+    ITablePrinter tablePrinter)
     : ICustomerService
 {
     public async Task ServeCustomerAsync()
@@ -24,7 +24,7 @@ public class CustomerService(
 
     private async Task ShowProductsAsync()
     {
-        var products = await productService.GetAllAsync();
+        var products = await productService.GetAllAsNoTrackingAsync();
 
         tablePrinter.Print(
             products.Select(

@@ -1,8 +1,8 @@
 ﻿namespace VendingMachine.Common.Helpers;
 
-public class TablePrinter<T> : ITablePrinter<T>
+public class TablePrinter : ITablePrinter
 {
-    public void Print(IEnumerable<T> items)
+    public void Print<T>(IEnumerable<T> items)
     {
         const int ColumnWidth = 25;
 
