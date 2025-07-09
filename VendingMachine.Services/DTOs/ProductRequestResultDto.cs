@@ -1,6 +1,6 @@
 ﻿namespace VendingMachine.Services.DTOs;
 
-public class ProductRequestDto
+public class ProductRequestResultDto
 {
     public bool IsCancelled { get; init; }
     public bool IsValid { get; init; }
