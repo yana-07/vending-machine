@@ -4,8 +4,12 @@ namespace VendingMachine.ConsoleApp.UserInteraction;
 
 public class ConsoleUserInteractor : IUserInteractor
 {
-    public string? ReadInput() => 
-        Console.ReadLine();
+    public string? ReadInput()
+    {
+        var input = Console.ReadLine();
+        Console.WriteLine();
+        return input;
+    }
 
     public void ShowMessage(string message)
     {
