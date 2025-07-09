@@ -2,6 +2,6 @@
 
 public enum MachineInteractionCommands
 {
-    Finish,
+    Continue,
     Cancel
 }
