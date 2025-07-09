@@ -7,5 +7,5 @@ public interface ICoinService
 {
     Task DepositAsync(IEnumerable<byte> coinValues);
     Task DecreaseInventoryAsync(IEnumerable<byte> coinValues);
-    Task<IEnumerable<Coin>> GetAllDescendingAsNoTrackingAsync();
+    Task<IEnumerable<CoinDto>> GetAllDescendingAsNoTrackingAsync();
 }
