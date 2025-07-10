@@ -1,5 +1,4 @@
-﻿using VendingMachine.Data.Models;
-using VendingMachine.Services.DTOs;
+﻿using VendingMachine.Services.DTOs;
 
 namespace VendingMachine.Services.Services;
 

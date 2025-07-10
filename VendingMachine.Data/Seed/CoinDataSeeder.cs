@@ -1,5 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
-using VendingMachine.Data.Context;
+﻿using VendingMachine.Data.Context;
 using VendingMachine.Data.Models;
 
 namespace VendingMachine.Data.Seed;

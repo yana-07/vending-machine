@@ -1,6 +1,4 @@
-﻿using VendingMachine.Services.DTOs;
-
-namespace VendingMachine.Services.Services;
+﻿namespace VendingMachine.Services.Services;
 
 public interface ICustomerService
 {

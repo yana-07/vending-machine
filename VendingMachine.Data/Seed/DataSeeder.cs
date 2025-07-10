@@ -1,5 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
-using System.Text.Json;
+﻿using System.Text.Json;
 using VendingMachine.Data.Context;
 
 namespace VendingMachine.Data.Seed;
