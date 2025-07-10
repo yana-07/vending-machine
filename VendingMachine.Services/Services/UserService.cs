@@ -18,7 +18,7 @@ public class UserService(
 
             if (string.IsNullOrEmpty(userRole))
                 continue;
-            if (!Enum.TryParse<UserRoles>(userRole, out _))
+            if (!Enum.TryParse<UserRoles>(userRole, true, out _))
             {
                 userInteractor.ShowMessage("Invalid user role.");
                 continue;
