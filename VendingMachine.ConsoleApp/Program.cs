@@ -51,11 +51,6 @@ static IHostBuilder CreateHostBuilder(string[] args)
             .AddScoped<ICustomerService, CustomerService>()
             .AddScoped<IVendorService, VendorService>()
             .AddScoped<ITablePrinter, TablePrinter>();
-
-            services.Configure<UserRolesSettings>(
-                context.Configuration.GetSection(nameof(UserRolesSettings)));
-            services.Configure<CoinsSettings>(
-                context.Configuration.GetSection(nameof(CoinsSettings)));
         });
 
     return hostBuilder;

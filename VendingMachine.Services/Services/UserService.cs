@@ -1,11 +1,10 @@
-﻿using Microsoft.Extensions.Options;
-using VendingMachine.Services.Configuration;
+﻿using VendingMachine.Common.Enums;
 
 namespace VendingMachine.Services.Services;
 
 public class UserService(
-    IUserInteractor userInteractor,
-    IOptions<UserRolesSettings> userRolesSettings) : IUserService
+    IUserInteractor userInteractor)
+    : IUserService
 {
     public string RequestUserRole()
     {
@@ -19,10 +18,7 @@ public class UserService(
 
             if (string.IsNullOrEmpty(userRole))
                 continue;
-
-            if (!userRolesSettings.Value.AllowedRoles.Contains(
-                userRole.ToLowerInvariant(),
-                StringComparer.OrdinalIgnoreCase))
+            if (!Enum.TryParse<UserRoles>(userRole, out _))
             {
                 userInteractor.ShowMessage("Invalid user role.");
                 continue;

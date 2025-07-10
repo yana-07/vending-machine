@@ -1,8 +1,7 @@
-﻿using Microsoft.Extensions.Options;
+﻿using VendingMachine.Common.Constants;
 using VendingMachine.Common.Enums;
 using VendingMachine.Common.Exceptions;
 using VendingMachine.Common.Helpers;
-using VendingMachine.Services.Configuration;
 using VendingMachine.Services.DTOs;
 
 namespace VendingMachine.Services.Services;
@@ -11,7 +10,6 @@ public class CustomerService(
     IUserInteractor userInteractor,
     IProductService productService,
     IChangeService changeService,
-    IOptions<CoinsSettings> coinsConfiguration,
     ITablePrinter tablePrinter)
     : ICustomerService
 {
@@ -90,7 +88,7 @@ public class CustomerService(
         while (true)
         {
             userInteractor.ShowMessage($"Insert a coin " +
-                $"(valid coins: [{string.Join(", ", coinsConfiguration.Value.AllowedCoins)}]), " +
+                $"(valid coins: [{string.Join(", ", CoinConstants.AllowedCoins)}]), " +
                 $"or type \"{MachineInteractionCommands.Continue}\" " +
                 $"to proceed or \"{MachineInteractionCommands.Cancel}\" to abort.");
 
@@ -122,7 +120,7 @@ public class CustomerService(
             }
 
             if (byte.TryParse(input, out var coinValue) &&
-                coinsConfiguration.Value.AllowedCoins.Contains(coinValue))
+                CoinConstants.AllowedCoins.Contains(coinValue))
             {
                 coinRequestResult.IsValid = true;
                 coinRequestResult.InsertedCoins.Add(coinValue);
