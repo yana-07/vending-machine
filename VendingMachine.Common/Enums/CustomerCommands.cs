@@ -1,6 +1,6 @@
 ﻿namespace VendingMachine.Common.Enums;
 
-public enum MachineInteractionCommands
+public enum CustomerCommands
 {
     Continue,
     Cancel

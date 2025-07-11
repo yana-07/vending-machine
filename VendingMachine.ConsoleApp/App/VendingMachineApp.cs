@@ -13,11 +13,11 @@ public class VendingMachineApp(
     {
         var userRole = userService.RequestUserRole();
 
-        if (userRole.Equals(nameof(UserRoles.Customer), StringComparison.OrdinalIgnoreCase))
+        if (userRole == UserRoles.Customer)
         {
             await customerService.ServeCustomerAsync();
         }
-        else if (userRole.Equals(nameof(UserRoles.Vendor), StringComparison.OrdinalIgnoreCase))
+        else if (userRole == UserRoles.Vendor)
         {
             await vendorService.ServeVendorAsync();
         }

@@ -5,6 +5,6 @@ namespace VendingMachine.Services.Services;
 public interface IChangeService
 {
     public Task<ChangeDto> GenerateChange(
-       IEnumerable<byte> insertedCoinValues,
+       Dictionary<byte, int> insertedCoins,
        int changeToReturn);
 }

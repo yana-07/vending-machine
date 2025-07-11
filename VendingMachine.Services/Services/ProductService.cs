@@ -3,6 +3,7 @@ using VendingMachine.Common.Exceptions;
 using VendingMachine.Data.Models;
 using VendingMachine.Data.Context;
 using VendingMachine.Services.DTOs;
+using VendingMachine.Common.Constants;
 
 namespace VendingMachine.Services.Services;
 
@@ -10,21 +11,6 @@ public class ProductService(
     VendingMachineDbContext dbContext)
     : IProductService
 {
-    public Task AddAsync(Product product)
-    {
-        throw new NotImplementedException();
-    }
-
-    public Task RemoveAsync(string name)
-    {
-        throw new NotImplementedException();
-    }
-
-    public Task UpdateAsync(string name)
-    {
-        throw new NotImplementedException();
-    }
-
     public async Task<IEnumerable<ProductDto>> GetAllAsNoTrackingAsync() =>
         await dbContext.Products
         .AsNoTracking()
@@ -33,6 +19,7 @@ public class ProductService(
             Name = product.Name,
             Code = product.Code,
             PriceInStotinki = product.PriceInStotinki,
+            Quantity = product.Quantity
         })
         .ToListAsync();
 
@@ -53,5 +40,68 @@ public class ProductService(
         product.Quantity--;
 
         await dbContext.SaveChangesAsync();
+    }
+
+    public async Task UpdateQuantityAsync(ProductQuantityUpdateDto product)
+    {
+        if (product.NewQuantity > ProductConstants.MaxQuantity)
+        {
+            throw new InvalidOperationException(
+                $"Product quantity cannot exceed {ProductConstants.MaxQuantity}");
+        }
+
+        if (product.NewQuantity < ProductConstants.MinQuantity)
+        {
+            throw new InvalidOperationException(
+                $"Product quantity cannot be less than {ProductConstants.MinQuantity}.");
+        }
+
+        var existingProduct = await GetByCodeAsync(product.Code);
+        existingProduct.Quantity = product.NewQuantity;
+        await dbContext.SaveChangesAsync();
+    }
+
+    public async Task RemoveAsync(string code)
+    {
+        var existingProduct = await GetByCodeAsync(code);
+        dbContext.Products.Remove(existingProduct); 
+        await dbContext.SaveChangesAsync();
+    }
+
+    public async Task AddAsync(ProductDto product)
+    {
+        var exists = await dbContext.Products
+            .AnyAsync(existingProduct => existingProduct.Code == product.Code);
+
+        if (exists)
+        {
+            throw new InvalidOperationException(
+                $"A product with code {product.Code} already exists. You must remove it first.");
+        }
+
+        dbContext.Products.Add(
+            new Product
+            { 
+                Code = product.Code,
+                Name = product.Name,
+                Quantity = product.Quantity,
+                PriceInStotinki = product.PriceInStotinki
+            });
+
+        await dbContext.SaveChangesAsync();
+    }
+
+    public async Task UpdatePriceAsync(ProductPriceUpdateDto product)
+    {
+        var existingProduct = await GetByCodeAsync(product.Code);
+        existingProduct.PriceInStotinki = product.NewPriceInStotinki;
+        await dbContext.SaveChangesAsync();
+    }
+
+    public async Task<bool> CanAddAsync()
+    {
+        var productsCount = await dbContext.Products.CountAsync();
+
+        return productsCount < VendingMachineConstants.SlotLimit;
     }
 }

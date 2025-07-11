@@ -7,6 +7,10 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="Spectre.Console" Version="0.50.0" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\VendingMachine.Common\VendingMachine.Common.csproj" />
     <ProjectReference Include="..\VendingMachine.Data\VendingMachine.Data.csproj" />
   </ItemGroup>

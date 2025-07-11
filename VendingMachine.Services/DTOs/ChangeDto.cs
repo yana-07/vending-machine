@@ -2,6 +2,6 @@
 
 public class ChangeDto
 {
-    public required List<byte> ReturnedCoins { get; init; } = [];
+    public required Dictionary<byte, int> ReturnedCoins { get; init; } = [];
     public required int RemainingChange { get; set; }
 }

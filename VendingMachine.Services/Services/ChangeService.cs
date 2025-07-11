@@ -6,23 +6,40 @@ public class ChangeService(ICoinService coinService)
     : IChangeService
 {
     public async Task<ChangeDto> GenerateChange(
-        IEnumerable<byte> insertedCoinValues,
+        Dictionary<byte, int> insertedCoins,
         int changeToReturn)
     {
         var changeFromInsertedCoins = GenerateChangeFromInsertedCoins(
-            insertedCoinValues, changeToReturn);
+            insertedCoins, changeToReturn);
 
-        var coinValuesToDeposit = insertedCoinValues
-            .Except(changeFromInsertedCoins.ReturnedCoins);
+        Dictionary<byte, int> coinsToDeposit = [];
 
-        if (coinValuesToDeposit.Any())
+        foreach (var (nominalValue, _) in insertedCoins)
         {
-            await coinService.DepositAsync(coinValuesToDeposit);
+            var quantityToDeposit = changeFromInsertedCoins
+                .ReturnedCoins
+                .TryGetValue(nominalValue, out int returnedQuantity) ? returnedQuantity : 0;
+
+            if (quantityToDeposit == 0) continue;
+
+            if (coinsToDeposit.TryGetValue(nominalValue, out int _))
+            {
+                coinsToDeposit[nominalValue] += quantityToDeposit;
+            }
+            else
+            {
+                coinsToDeposit.Add(nominalValue, quantityToDeposit);
+            }
+        }
+
+        if (coinsToDeposit.Count > 0)
+        {
+            await coinService.DepositAsync(coinsToDeposit);
         }
 
         var finalChange = new ChangeDto
         {
-            ReturnedCoins = [.. changeFromInsertedCoins.ReturnedCoins],
+            ReturnedCoins = changeFromInsertedCoins.ReturnedCoins,
             RemainingChange = changeFromInsertedCoins.RemainingChange
         };
 
@@ -31,7 +48,18 @@ public class ChangeService(ICoinService coinService)
             var changeFromInventory = await GenerateChangeFromInventory(
                 changeFromInsertedCoins.RemainingChange);
 
-            finalChange.ReturnedCoins.AddRange(changeFromInventory.ReturnedCoins);
+            foreach (var (nominalValue, quantity) in changeFromInventory.ReturnedCoins)
+            {
+                if (finalChange.ReturnedCoins.TryGetValue(nominalValue, out int _))
+                {
+                    finalChange.ReturnedCoins[nominalValue] += quantity;
+                }
+                else
+                {
+                    finalChange.ReturnedCoins.Add(nominalValue, quantity);
+                }
+            }
+
             finalChange.RemainingChange += changeFromInventory.RemainingChange;
         }
 
@@ -39,25 +67,35 @@ public class ChangeService(ICoinService coinService)
     }
 
     private static ChangeDto GenerateChangeFromInsertedCoins(
-        IEnumerable<byte> insertedCoinValues,
+        Dictionary<byte, int> insertedCoins,
         int changeToReturn)
     {
-        List<byte> returnedCoinValues = [];
+        Dictionary<byte, int> returnedCoins = [];
         int remainingChange = changeToReturn;
 
-        foreach (var coinValue in insertedCoinValues
-            .OrderByDescending(coinValue => coinValue))
+        foreach (var (nominalValue, quantity) in insertedCoins
+            .OrderByDescending(coin => coin.Key))
         {
-            if (remainingChange - coinValue >= 0)
+            for (int i = 0; i < quantity && remainingChange - nominalValue >= 0; i++)
             {
-                returnedCoinValues.Add(coinValue);
-                remainingChange -= coinValue;
+                if (returnedCoins.TryGetValue(nominalValue, out int _))
+                {
+                    returnedCoins[nominalValue]++;
+                }
+                else
+                {
+                    returnedCoins.Add(nominalValue, 1);
+                }
+
+                remainingChange -= nominalValue;
             }
+
+            if (remainingChange == 0) break;
         }
 
         return new ChangeDto
         {
-            ReturnedCoins = returnedCoinValues,
+            ReturnedCoins = returnedCoins,
             RemainingChange = remainingChange
         };
     }
@@ -70,15 +108,23 @@ public class ChangeService(ICoinService coinService)
 
         var coins = await coinService.GetAllDescendingAsNoTrackingAsync();
 
-        List<byte> returnedCoins = [];
+        Dictionary<byte, int> returnedCoins = [];
 
         foreach (var coin in coins)
         {
             while (coin.Quantity > MinCoinQuantity &&
                 remainingChange - coin.Value >= 0)
             {
+                if (returnedCoins.TryGetValue(coin.Value, out int _))
+                {
+                    returnedCoins[coin.Value]++;
+                }
+                else
+                {
+                    returnedCoins.Add(coin.Value, 1);
+                }
+
                 remainingChange -= coin.Value;
-                returnedCoins.Add(coin.Value);
             }
         }
 
@@ -86,7 +132,7 @@ public class ChangeService(ICoinService coinService)
 
         return new ChangeDto
         {
-            ReturnedCoins = [.. returnedCoins],
+            ReturnedCoins = returnedCoins,
             RemainingChange = remainingChange
         };
     }

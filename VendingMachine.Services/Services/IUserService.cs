@@ -1,6 +1,8 @@
-﻿namespace VendingMachine.Services.Services;
+﻿using VendingMachine.Common.Enums;
+
+namespace VendingMachine.Services.Services;
 
 public interface IUserService
 {
-    public string RequestUserRole();
+    public UserRoles RequestUserRole();
 }

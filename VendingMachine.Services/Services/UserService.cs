@@ -1,30 +1,19 @@
-﻿using VendingMachine.Common.Enums;
+﻿using Spectre.Console;
+using VendingMachine.Common.Enums;
 
 namespace VendingMachine.Services.Services;
 
 public class UserService(
-    IUserInteractor userInteractor)
+    IAnsiConsole ansiConsole)
     : IUserService
 {
-    public string RequestUserRole()
+    public UserRoles RequestUserRole()
     {
-        string? userRole;
+        var selecteRole = ansiConsole.Prompt(
+            new SelectionPrompt<UserRoles>()
+                .Title("Are you a customer or a vendor:")
+                .AddChoices(Enum.GetValues<UserRoles>()));
 
-        while (true)
-        {
-            userInteractor.ShowMessage("Are you a customer or a vendor?");
-
-            userRole = userInteractor.ReadInput();
-
-            if (string.IsNullOrEmpty(userRole))
-                continue;
-            if (!Enum.TryParse<UserRoles>(userRole, true, out _))
-            {
-                userInteractor.ShowMessage("Invalid user role.");
-                continue;
-            }
-
-            return userRole;
-        }
+        return selecteRole;
     }
 }

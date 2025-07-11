@@ -1,4 +1,6 @@
-﻿using VendingMachine.Common.Constants;
+﻿using Spectre.Console;
+using System.Linq;
+using VendingMachine.Common.Constants;
 using VendingMachine.Common.Enums;
 using VendingMachine.Common.Exceptions;
 using VendingMachine.Common.Helpers;
@@ -10,7 +12,8 @@ public class CustomerService(
     IUserInteractor userInteractor,
     IProductService productService,
     IChangeService changeService,
-    ITablePrinter tablePrinter)
+    ITablePrinter tablePrinter,
+    IAnsiConsole ansiConsole)
     : ICustomerService
 {
     public async Task ServeCustomerAsync()
@@ -38,21 +41,34 @@ public class CustomerService(
     {
         ProductRequestResultDto? productRequestResult = null;
         CoinRequestResultDto? coinRequestResult = null;
-        List<byte> insertedCoins = [];
+        Dictionary<byte, int> insertedCoins = [];
 
         while (true)
         {
             if (coinRequestResult is null)
             {
-                coinRequestResult = RequestCoins(insertedCoins.Sum(coin => coin));
-                insertedCoins.AddRange(coinRequestResult.InsertedCoins);
+                coinRequestResult = RequestCoins(
+                    insertedCoins.Sum(coin => coin.Key * coin.Value));
+
+                foreach (var coin in coinRequestResult.InsertedCoins)
+                {
+                    if (insertedCoins.TryGetValue(coin.Key, out int _))
+                    {
+                        insertedCoins[coin.Key] += coin.Value;
+                    }
+                    else
+                    {
+                        insertedCoins.Add(coin.Key, coin.Value);
+                    }
+                }
 
                 if (coinRequestResult.IsCancelled || !coinRequestResult.IsValid)
                 {
-                    ReturnInserted(insertedCoins);
+                    if (coinRequestResult.InsertedCoins.Count > 0)
+                        ReturnInserted(insertedCoins);
                     return;
                 }
-            }          
+            }
 
             if (productRequestResult is null)
             {
@@ -85,24 +101,21 @@ public class CustomerService(
     {
         var coinRequestResult = new CoinRequestResultDto();
 
+        string[] choices = [
+            .. CoinConstants.AllowedCoins
+                .Select(coin => coin.ToString()),
+            .. Enum.GetValues<CustomerCommands>()
+                .Select(command => command.ToString())];
+
         while (true)
         {
-            userInteractor.ShowMessage($"Insert a coin " +
-                $"(valid coins: [{string.Join(", ", CoinConstants.AllowedCoins)}]), " +
-                $"or type \"{MachineInteractionCommands.Continue}\" " +
-                $"to proceed or \"{MachineInteractionCommands.Cancel}\" to abort.");
+            var userInput = ansiConsole.Prompt(
+               new SelectionPrompt<string>()
+                   .Title($"Insert a coin or select a command.")
+                   .AddChoices(choices));
 
-            var input = userInteractor.ReadInput();
-
-            if (string.IsNullOrEmpty(input))
-            {
-                userInteractor.ShowMessage("Invalid coin or command.");
-
-                continue;
-            }
-
-            if (input.Equals(
-                nameof(MachineInteractionCommands.Cancel),
+            if (userInput.Equals(
+                nameof(CustomerCommands.Cancel),
                 StringComparison.OrdinalIgnoreCase))
             {
                 coinRequestResult.IsCancelled = true;
@@ -110,8 +123,8 @@ public class CustomerService(
                 return coinRequestResult;
             }
 
-            if (input.Equals(
-                nameof(MachineInteractionCommands.Continue),
+            if (userInput.Equals(
+                nameof(CustomerCommands.Continue),
                 StringComparison.OrdinalIgnoreCase))
             {
                 coinRequestResult.IsFinished = true;
@@ -119,83 +132,74 @@ public class CustomerService(
                 return coinRequestResult;
             }
 
-            if (byte.TryParse(input, out var coinValue) &&
+            if (byte.TryParse(userInput, out var coinValue) &&
                 CoinConstants.AllowedCoins.Contains(coinValue))
             {
                 coinRequestResult.IsValid = true;
-                coinRequestResult.InsertedCoins.Add(coinValue);
+                if (coinRequestResult.InsertedCoins.TryGetValue(coinValue, out int _))
+                {
+                    coinRequestResult.InsertedCoins[coinValue]++;
+                }
+                else
+                {
+                    coinRequestResult.InsertedCoins.Add(coinValue, 1);
+                }
+               
+                var justInsertedAmount = coinRequestResult
+                    .InsertedCoins
+                    .Sum(coin => coin.Key * coin.Value);
+                var totalInsertedAmount = justInsertedAmount + alreadyInsertedAmount;
+
                 userInteractor.ShowMessage($"Total inserted: " +
-                    $"{(coinRequestResult.InsertedCoins.Sum(
-                        coinValue => coinValue) + alreadyInsertedAmount) / (decimal)100:F2}lv");
-
-                continue;
+                    $"{totalInsertedAmount / (decimal)100:F2}lv");
             }
-
-            coinRequestResult.IsValid = false;
-            userInteractor.ShowMessage("Invalid coin or command.");
         }
     }
 
-    private void ReturnInserted(List<byte> coins)
+    private void ReturnInserted(Dictionary<byte, int> coins)
     {
-        userInteractor.ShowMessage($"Returning inserted coins..." +
-            $"{Environment.NewLine}{string.Join(
-                Environment.NewLine, coins)}");
+        userInteractor.ShowMessage($"Returning inserted coins...");
+        foreach (var (nominalValue, quantity) in coins)
+        {
+            for (int i = 0; i < quantity; i++)
+            {
+                userInteractor.ShowMessage(nominalValue.ToString());
+            }
+        }
     }
 
     private async Task<ProductRequestResultDto> RequestProductAsync()
     {
         var productCodes = await productService.GetAllCodesAsync();
+        string[] choices = [.. productCodes, nameof(CustomerCommands.Cancel)];
 
-        while (true)
+        var userInput = ansiConsole.Prompt(
+            new SelectionPrompt<string>()
+                .Title($"Select a product code or a command.")
+                .AddChoices(choices));
+
+        bool isCancelled = userInput.Equals(
+            nameof(CustomerCommands.Cancel),
+            StringComparison.OrdinalIgnoreCase);
+
+        return new ProductRequestResultDto
         {
-            userInteractor.ShowMessage($"Select a product by its code " +
-                $"or type \"{MachineInteractionCommands.Cancel}\" to abort.");
-
-            var input = userInteractor.ReadInput();
-
-            if (string.IsNullOrEmpty(input))
-            {
-                userInteractor.ShowMessage("Invalid product code or command.");
-                continue;
-            }
-
-            if (input.Equals(
-                nameof(MachineInteractionCommands.Cancel),
-                StringComparison.OrdinalIgnoreCase))
-            {
-                return new ProductRequestResultDto
-                {
-                    IsCancelled = true,
-                    IsValid = false,
-                    ProductCode = string.Empty
-                };
-            }
-
-            if (productCodes.Contains(input))
-            {
-                return new ProductRequestResultDto
-                {
-                    IsCancelled = false,
-                    IsValid = true,
-                    ProductCode = input
-                };
-            }
-
-            userInteractor.ShowMessage("Invalid product code or command.");
-        }
+            IsCancelled = isCancelled,
+            IsValid = !isCancelled,
+            ProductCode = isCancelled ? string.Empty : userInput
+        };
     }
 
     private async Task<bool> IsPurchaseProcessed(
-        string productCode, List<byte> insertedCoins)
+        string productCode, Dictionary<byte, int> insertedCoins)
     {
         SellProductDto? sellProductResult = null;
 
         sellProductResult = await TrySellProductAsync(
             productCode,
-            insertedCoins.Sum(coin => coin));
+            insertedCoins.Sum(coin => coin.Key * coin.Value));
 
-        if (sellProductResult?.IsSuccess == true && 
+        if (sellProductResult?.IsSuccess == true &&
             sellProductResult?.RemainingToInsert == 0)
         {
             await productService.DecreaseInventory(productCode);
@@ -213,14 +217,12 @@ public class CustomerService(
 
             if (changeResult.ReturnedCoins.Count > 0)
             {
-                userInteractor.ShowMessage($"Returning your change..." +
-                    $"{Environment.NewLine}{string.Join(
-                        Environment.NewLine, changeResult.ReturnedCoins)}");
+                ReturnInserted(changeResult.ReturnedCoins);              
             }
 
             return true;
         }
-        else if (sellProductResult?.IsSuccess == false && 
+        else if (sellProductResult?.IsSuccess == false &&
             sellProductResult?.RemainingToInsert > 0)
         {
             userInteractor.ShowMessage(

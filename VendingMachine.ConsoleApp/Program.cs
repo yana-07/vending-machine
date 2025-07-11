@@ -7,9 +7,8 @@ using VendingMachine.Data.Seed;
 using VendingMachine.ConsoleApp.App;
 using VendingMachine.ConsoleApp.UserInteraction;
 using VendingMachine.Services.Services;
-using VendingMachine.Services.DTOs;
 using VendingMachine.Common.Helpers;
-using VendingMachine.Services.Configuration;
+using Spectre.Console;
 
 using var host = CreateHostBuilder(args).Build();
 
@@ -50,7 +49,8 @@ static IHostBuilder CreateHostBuilder(string[] args)
             .AddScoped<IChangeService, ChangeService>()
             .AddScoped<ICustomerService, CustomerService>()
             .AddScoped<IVendorService, VendorService>()
-            .AddScoped<ITablePrinter, TablePrinter>();
+            .AddScoped<ITablePrinter, TablePrinter>()
+            .AddScoped(_ => AnsiConsole.Console);
         });
 
     return hostBuilder;
