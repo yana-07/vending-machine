@@ -18,7 +18,7 @@ public class ProductService(
         {
             Name = product.Name,
             Code = product.Code,
-            PriceInStotinki = product.PriceInStotinki,
+            Price = product.Price,
             Quantity = product.Quantity
         })
         .ToListAsync();
@@ -44,20 +44,20 @@ public class ProductService(
 
     public async Task UpdateQuantityAsync(ProductQuantityUpdateDto product)
     {
-        if (product.NewQuantity > ProductConstants.MaxQuantity)
+        if (product.Quantity > ProductConstants.MaxQuantity)
         {
             throw new InvalidOperationException(
                 $"Product quantity cannot exceed {ProductConstants.MaxQuantity}");
         }
 
-        if (product.NewQuantity < ProductConstants.MinQuantity)
+        if (product.Quantity < ProductConstants.MinQuantity)
         {
             throw new InvalidOperationException(
                 $"Product quantity cannot be less than {ProductConstants.MinQuantity}.");
         }
 
         var existingProduct = await GetByCodeAsync(product.Code);
-        existingProduct.Quantity = product.NewQuantity;
+        existingProduct.Quantity = product.Quantity;
         await dbContext.SaveChangesAsync();
     }
 
@@ -85,7 +85,7 @@ public class ProductService(
                 Code = product.Code,
                 Name = product.Name,
                 Quantity = product.Quantity,
-                PriceInStotinki = product.PriceInStotinki
+                Price = product.Price
             });
 
         await dbContext.SaveChangesAsync();
@@ -94,7 +94,7 @@ public class ProductService(
     public async Task UpdatePriceAsync(ProductPriceUpdateDto product)
     {
         var existingProduct = await GetByCodeAsync(product.Code);
-        existingProduct.PriceInStotinki = product.NewPriceInStotinki;
+        existingProduct.Price = product.Price;
         await dbContext.SaveChangesAsync();
     }
 
