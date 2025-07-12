@@ -35,10 +35,12 @@ public class CoinService(
     public async Task DepositAsync(CoinDto coin)
     {
         var coinToUpdate = await dbContext.Coins
-            .FirstOrDefaultAsync(coin => coin.Value == coin.Value) ?? 
+            .FirstOrDefaultAsync(coinToUpdate => coinToUpdate.Value == coin.Value) ??
             throw new CoinNotFoundException($"A coin with value {coin.Value} does not exist.");
 
         coinToUpdate.Quantity += coin.Quantity;
+
+        await dbContext.SaveChangesAsync();
     }
 
     public async Task DecreaseInventoryAsync(Dictionary<byte, int> coins)
@@ -53,14 +55,34 @@ public class CoinService(
         await dbContext.SaveChangesAsync();
     }
 
-    public async Task<IEnumerable<CoinDto>> GetAllDescendingAsNoTrackingAsync() =>
-        await dbContext.Coins
-        .OrderByDescending(coin => coin.Value)
-        .Select(coin => new CoinDto
+    public async Task DecreaseInventoryAsync(CoinDto coin)
+    {
+        var coinToUpdate = await dbContext.Coins
+            .FirstOrDefaultAsync(coinToUpdate => coinToUpdate.Value == coin.Value) ?? 
+            throw new CoinNotFoundException($"A coin with value {coin.Value} does not exist.");
+
+        if (coinToUpdate.Quantity - coin.Quantity < 0)
         {
-            Value = coin.Value,
-            Quantity = coin.Quantity
-        })
-        .AsNoTracking()
-        .ToListAsync();
+            throw new InvalidOperationException(
+                $"Cannot collect {coin.Quantity} coins of value {coin.Value}. " +
+                $"Quantity cannot fall below zero. (available: {coinToUpdate.Quantity}).");
+        }
+
+        coinToUpdate.Quantity -= coin.Quantity;
+
+        await dbContext.SaveChangesAsync();
+    }
+
+    public async Task<IEnumerable<CoinDto>> GetAllDescendingAsNoTrackingAsync()
+    {
+        return await dbContext.Coins
+            .OrderByDescending(coin => coin.Value)
+            .Select(coin => new CoinDto
+            {
+                Value = coin.Value,
+                Quantity = coin.Quantity
+            })
+            .AsNoTracking()
+            .ToListAsync();
+    }
 }
