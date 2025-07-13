@@ -5,10 +5,10 @@ using Microsoft.Extensions.Hosting;
 using VendingMachine.Data.Context;
 using VendingMachine.Data.Seed;
 using VendingMachine.ConsoleApp.App;
-using VendingMachine.ConsoleApp.UserInteraction;
 using VendingMachine.Services.Services;
 using VendingMachine.Common.Helpers;
 using Spectre.Console;
+using Serilog;
 
 using var host = CreateHostBuilder(args).Build();
 
@@ -27,8 +27,6 @@ var vendingMachineApp = serviceProvider
     .GetRequiredService<IVendingMachineApp>();
 await vendingMachineApp.RunAsync();
 
-Console.ReadKey();
-
 static IHostBuilder CreateHostBuilder(string[] args)
 {
     var hostBuilder = Host.CreateDefaultBuilder(args)
@@ -42,7 +40,6 @@ static IHostBuilder CreateHostBuilder(string[] args)
             .AddScoped<IDataSeeder, ProductDataSeeder>()
             .AddScoped<IDataSeeder, CoinDataSeeder>()
             .AddScoped<SeederCoordinator>()
-            .AddScoped<IUserInteractor, ConsoleUserInteractor>()
             .AddScoped<IUserService, UserService>()
             .AddScoped<IProductService, ProductService>()
             .AddScoped<ICoinService, CoinService>()
@@ -52,6 +49,17 @@ static IHostBuilder CreateHostBuilder(string[] args)
             .AddScoped<ITablePrinter, TablePrinter>()
             .AddScoped(_ => AnsiConsole.Console);
         });
+
+    var config = new ConfigurationBuilder()
+        .AddJsonFile("appsettings.json")
+        .Build();
+
+    Log.Logger = new LoggerConfiguration()
+        .MinimumLevel.Information()
+        .ReadFrom.Configuration(config)
+        .CreateLogger();
+
+    hostBuilder.UseSerilog();
 
     return hostBuilder;
 }

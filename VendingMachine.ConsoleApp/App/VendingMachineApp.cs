@@ -1,4 +1,6 @@
-﻿using VendingMachine.Common.Enums;
+﻿using Microsoft.Extensions.Logging;
+using Spectre.Console;
+using VendingMachine.Common.Enums;
 using VendingMachine.Services.Services;
 
 namespace VendingMachine.ConsoleApp.App;
@@ -6,23 +8,34 @@ namespace VendingMachine.ConsoleApp.App;
 public class VendingMachineApp(
     IUserService userService,
     ICustomerService customerService,
-    IVendorService vendorService) 
+    IVendorService vendorService,
+    IAnsiConsole ansiConsole,
+    ILogger<VendingMachineApp> logger) 
     : IVendingMachineApp
 {
     public async Task RunAsync()
     {
-        while (true)
+        try
         {
-            var userRole = userService.RequestUserRole();
+            while (true)
+            {
+                var userRole = userService.RequestUserRole();
 
-            if (userRole == UserRoles.Customer)
-            {
-                await customerService.ServeCustomerAsync();
+                if (userRole == UserRoles.Customer)
+                {
+                    await customerService.ServeCustomerAsync();
+                }
+                else if (userRole == UserRoles.Vendor)
+                {
+                    await vendorService.ServeVendorAsync();
+                }
             }
-            else if (userRole == UserRoles.Vendor)
-            {
-                await vendorService.ServeVendorAsync();
-            }
+        }
+        catch (Exception ex)
+        {
+            var message = "An unexpected error occurred.";
+            ansiConsole.MarkupLine($"[red]{message}[/]");
+            logger.LogError(ex, message);
         }
     }
 }

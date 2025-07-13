@@ -1,4 +1,5 @@
-﻿using Spectre.Console;
+﻿using Microsoft.Extensions.Logging;
+using Spectre.Console;
 using VendingMachine.Common.Constants;
 using VendingMachine.Common.Enums;
 using VendingMachine.Common.Exceptions;
@@ -11,7 +12,8 @@ public class CustomerService(
     IProductService productService,
     IChangeService changeService,
     ITablePrinter tablePrinter,
-    IAnsiConsole ansiConsole)
+    IAnsiConsole ansiConsole,
+    ILogger<CustomerService> logger)
     : ICustomerService
 {
     public async Task ServeCustomerAsync()
@@ -93,6 +95,7 @@ public class CustomerService(
                     ex is InvalidOperationException ||
                     ex is CoinNotFoundException)
             {
+                logger.LogError(ex, nameof(ProcessTransactionAsync));
                 ansiConsole.MarkupLine($"[red]{ex.Message}[/]");
                 productRequestResult = null;
                 continue;
