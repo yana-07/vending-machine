@@ -7,4 +7,6 @@ public class SellProductDto
     public int ChangeToReturn { get; init; }
 
     public int RemainingToInsert { get; init; }
+
+    public string? ErrorMessage { get; init; }
 }

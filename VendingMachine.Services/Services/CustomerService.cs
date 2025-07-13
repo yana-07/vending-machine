@@ -22,7 +22,8 @@ public class CustomerService(
 
         await ProcessTransactionAsync();
 
-        await Task.Delay(1000);
+        ansiConsole.MarkupLine("Press any key to continue.");
+        Console.ReadKey();
 
         Console.Clear();
         Console.WriteLine("\x1b[3J");
@@ -99,8 +100,9 @@ public class CustomerService(
                 ansiConsole.MarkupLine($"[red]{ex.Message}[/]");
                 productRequestResult = null;
                 continue;
-            }   
+            }
 
+            productRequestResult = null;
             coinRequestResult = null;
         }
     }
@@ -200,14 +202,11 @@ public class CustomerService(
     private async Task<bool> TryProcessPurchase(
         string productCode, Dictionary<byte, int> insertedCoins)
     {
-        SellProductDto? sellProductResult = null;
+        SellProductDto sellProductResult = await TrySellProductAsync(
+            productCode, insertedCoins.Sum(coin => coin.Key * coin.Value));
 
-        sellProductResult = await TrySellProductAsync(
-            productCode,
-            insertedCoins.Sum(coin => coin.Key * coin.Value));
-
-        if (sellProductResult?.IsSuccess == true &&
-            sellProductResult?.RemainingToInsert == 0)
+        if (sellProductResult.IsSuccess &&
+            sellProductResult.RemainingToInsert == 0)
         {
             await productService.DecreaseInventory(productCode);
 
@@ -230,26 +229,28 @@ public class CustomerService(
 
             return true;
         }
-        else if (sellProductResult?.IsSuccess == false &&
-            sellProductResult?.RemainingToInsert > 0)
+        else
         {
-            ansiConsole.MarkupLine(
-                "[red]Insufficient funds. Insert " +
-                $"{sellProductResult.RemainingToInsert / (decimal)100:F2}lv more to continue.[/]");
+            ansiConsole.MarkupLine($"[red]{sellProductResult.ErrorMessage ?? 
+                "Impossible to sell product."}[/]");
         }
 
         return false;
     }
 
-    private async Task<SellProductDto> TrySellProductAsync(string code, int coinsValuesSum)
+    private async Task<SellProductDto> TrySellProductAsync(
+        string code, int coinsValuesSum)
     {
         var product = await productService.GetByCodeAsync(code);
 
         if (product.Quantity == 0)
         {
-            throw new InvalidOperationException(
-                $"Product \"{product.Name}\" with code {code} " +
-                $"is out of stock. Please select another one or contact the vendor.");
+            return new SellProductDto
+            {
+                IsSuccess = false,
+                ErrorMessage = $"Product \"{product.Name}\" with code {code} " +
+                $"is out of stock. Please select another one or contact the vendor."
+            };
         }
 
         if (product.Price <= coinsValuesSum)
@@ -261,10 +262,14 @@ public class CustomerService(
             };
         }
 
+        int remainingToInsert = product.Price - coinsValuesSum;
+
         return new SellProductDto
         {
             IsSuccess = false,
-            RemainingToInsert = product.Price - coinsValuesSum
+            RemainingToInsert = remainingToInsert,
+            ErrorMessage = "[red]Insufficient funds. Insert " +
+                $"{remainingToInsert / (decimal)100:F2}lv more to continue.[/]"
         };
     }
 }
