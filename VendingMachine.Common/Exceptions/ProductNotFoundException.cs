@@ -8,15 +8,8 @@ public class ProductNotFoundException : Exception
     {
     }
 
-    public ProductNotFoundException(
-        string message) 
-        : base(message) 
-    { 
-    }
-
-    public ProductNotFoundException(
-        string message, string productCode) 
-        : base(message)
+    public ProductNotFoundException(string productCode)
+        : base($"Product with code {productCode} does not exist.")
     {
         ProductCode = productCode;
     }

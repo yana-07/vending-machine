@@ -1,5 +1,4 @@
 ﻿using Spectre.Console;
-using System.Linq;
 using VendingMachine.Common.Constants;
 using VendingMachine.Common.Enums;
 using VendingMachine.Common.Exceptions;
@@ -9,7 +8,6 @@ using VendingMachine.Services.DTOs;
 namespace VendingMachine.Services.Services;
 
 public class CustomerService(
-    IUserInteractor userInteractor,
     IProductService productService,
     IChangeService changeService,
     ITablePrinter tablePrinter,
@@ -21,6 +19,11 @@ public class CustomerService(
         await ShowProductsAsync();
 
         await ProcessTransactionAsync();
+
+        await Task.Delay(1000);
+
+        Console.Clear();
+        Console.WriteLine("\x1b[3J");
     }
 
     private async Task ShowProductsAsync()
@@ -33,7 +36,7 @@ public class CustomerService(
                 {
                     Name = product.Name,
                     Code = product.Code,
-                    Price = $"{product.PriceInStotinki / (decimal)100:F2}lv",
+                    Price = $"{product.Price / (decimal)100:F2}lv",
                 }));
     }
 
@@ -62,9 +65,9 @@ public class CustomerService(
                     }
                 }
 
-                if (coinRequestResult.IsCancelled || !coinRequestResult.IsValid)
+                if (coinRequestResult.IsCancelled)
                 {
-                    if (coinRequestResult.InsertedCoins.Count > 0)
+                    if (insertedCoins.Count > 0) 
                         ReturnInserted(insertedCoins);
                     return;
                 }
@@ -82,16 +85,18 @@ public class CustomerService(
 
             try
             {
-                if (await IsPurchaseProcessed(productRequestResult.ProductCode, insertedCoins))
+                if (await TryProcessPurchase(productRequestResult.ProductCode, insertedCoins))
                     return;
             }
-            catch (Exception ex) when (
-                ex is ProductNotFoundException || ex is InvalidOperationException)
+            catch (Exception ex) 
+                when (ex is ProductNotFoundException || 
+                    ex is InvalidOperationException ||
+                    ex is CoinNotFoundException)
             {
-                userInteractor.ShowMessage(ex.Message);
+                ansiConsole.MarkupLine($"[red]{ex.Message}[/]");
                 productRequestResult = null;
                 continue;
-            }
+            }   
 
             coinRequestResult = null;
         }
@@ -101,38 +106,38 @@ public class CustomerService(
     {
         var coinRequestResult = new CoinRequestResultDto();
 
-        string[] choices = [
-            .. CoinConstants.AllowedCoins
-                .Select(coin => coin.ToString()),
-            .. Enum.GetValues<CustomerCommands>()
-                .Select(command => command.ToString())];
+        var choices = CoinConstants.AllowedCoins.Select(coin => coin.ToString());
 
         while (true)
         {
-            var userInput = ansiConsole.Prompt(
-               new SelectionPrompt<string>()
-                   .Title($"Insert a coin or select a command.")
-                   .AddChoices(choices));
+            var selectionPrompt = new SelectionPrompt<string>()
+               .Title("Insert a coin:")
+               .AddChoices(
+                    CoinConstants.AllowedCoins
+                    .Select(coin => coin.ToString()));
 
-            if (userInput.Equals(
-                nameof(CustomerCommands.Cancel),
-                StringComparison.OrdinalIgnoreCase))
+            if (alreadyInsertedAmount > 0 || coinRequestResult.InsertedCoins.Count > 0)
+            {
+                selectionPrompt.AddChoice(nameof(CustomerCommands.Continue));
+            }
+
+            selectionPrompt.AddChoice(nameof(CustomerCommands.Cancel));
+
+            var selection = ansiConsole.Prompt(selectionPrompt);
+
+            if (selection == nameof(CustomerCommands.Cancel))
             {
                 coinRequestResult.IsCancelled = true;
 
                 return coinRequestResult;
             }
 
-            if (userInput.Equals(
-                nameof(CustomerCommands.Continue),
-                StringComparison.OrdinalIgnoreCase))
+            if (selection == nameof(CustomerCommands.Continue))
             {
-                coinRequestResult.IsFinished = true;
-
                 return coinRequestResult;
             }
 
-            if (byte.TryParse(userInput, out var coinValue) &&
+            if (byte.TryParse(selection, out var coinValue) &&
                 CoinConstants.AllowedCoins.Contains(coinValue))
             {
                 coinRequestResult.IsValid = true;
@@ -150,20 +155,21 @@ public class CustomerService(
                     .Sum(coin => coin.Key * coin.Value);
                 var totalInsertedAmount = justInsertedAmount + alreadyInsertedAmount;
 
-                userInteractor.ShowMessage($"Total inserted: " +
-                    $"{totalInsertedAmount / (decimal)100:F2}lv");
+                ansiConsole.MarkupLine(
+                    "[green]Total inserted: " +
+                    $"{totalInsertedAmount / (decimal)100:F2}lv[/]");
             }
         }
     }
 
     private void ReturnInserted(Dictionary<byte, int> coins)
     {
-        userInteractor.ShowMessage($"Returning inserted coins...");
+        ansiConsole.MarkupLine("[blue]Returning inserted coins...[/]");
         foreach (var (nominalValue, quantity) in coins)
         {
             for (int i = 0; i < quantity; i++)
             {
-                userInteractor.ShowMessage(nominalValue.ToString());
+                ansiConsole.MarkupLine(nominalValue.ToString());
             }
         }
     }
@@ -173,24 +179,22 @@ public class CustomerService(
         var productCodes = await productService.GetAllCodesAsync();
         string[] choices = [.. productCodes, nameof(CustomerCommands.Cancel)];
 
-        var userInput = ansiConsole.Prompt(
+        var selection = ansiConsole.Prompt(
             new SelectionPrompt<string>()
-                .Title($"Select a product code or a command.")
+                .Title($"Select product code:")
                 .AddChoices(choices));
 
-        bool isCancelled = userInput.Equals(
-            nameof(CustomerCommands.Cancel),
-            StringComparison.OrdinalIgnoreCase);
+        bool isCancelled = selection == nameof(CustomerCommands.Cancel);
 
         return new ProductRequestResultDto
         {
             IsCancelled = isCancelled,
             IsValid = !isCancelled,
-            ProductCode = isCancelled ? string.Empty : userInput
+            ProductCode = isCancelled ? string.Empty : selection
         };
     }
 
-    private async Task<bool> IsPurchaseProcessed(
+    private async Task<bool> TryProcessPurchase(
         string productCode, Dictionary<byte, int> insertedCoins)
     {
         SellProductDto? sellProductResult = null;
@@ -204,15 +208,16 @@ public class CustomerService(
         {
             await productService.DecreaseInventory(productCode);
 
-            userInteractor.ShowMessage($"Dispensing product with code {productCode}...");
+            ansiConsole.MarkupLine("[green]Dispensing product...[/]");
 
             var changeResult = await changeService.GenerateChange(
                 insertedCoins, sellProductResult.ChangeToReturn);
 
             if (changeResult.RemainingChange > 0)
             {
-                userInteractor.ShowMessage($"The following amount could not be returned: " +
-                    $"{changeResult.RemainingChange / (decimal)100:F2}lv.");
+                ansiConsole.MarkupLine(
+                    "[yellow]The following amount could not be returned: " +
+                    $"{changeResult.RemainingChange / (decimal)100:F2}lv.[/]");
             }
 
             if (changeResult.ReturnedCoins.Count > 0)
@@ -225,9 +230,9 @@ public class CustomerService(
         else if (sellProductResult?.IsSuccess == false &&
             sellProductResult?.RemainingToInsert > 0)
         {
-            userInteractor.ShowMessage(
-                $"Insufficient funds. Insert " +
-                $"{sellProductResult.RemainingToInsert / (decimal)100:F2}lv more to continue.");
+            ansiConsole.MarkupLine(
+                "[red]Insufficient funds. Insert " +
+                $"{sellProductResult.RemainingToInsert / (decimal)100:F2}lv more to continue.[/]");
         }
 
         return false;
@@ -235,28 +240,28 @@ public class CustomerService(
 
     private async Task<SellProductDto> TrySellProductAsync(string code, int coinsValuesSum)
     {
-        var product = await productService.GetByCodeAsync(code) ??
-            throw new ProductNotFoundException($"A product with code {code} does not exist.", code);
+        var product = await productService.GetByCodeAsync(code);
 
         if (product.Quantity == 0)
         {
-            throw new InvalidOperationException($"The product with code {code} ({product.Name}) " +
+            throw new InvalidOperationException(
+                $"Product \"{product.Name}\" with code {code} " +
                 $"is out of stock. Please select another one or contact the vendor.");
         }
 
-        if (product.PriceInStotinki <= coinsValuesSum)
+        if (product.Price <= coinsValuesSum)
         {
             return new SellProductDto
             {
                 IsSuccess = true,
-                ChangeToReturn = coinsValuesSum - product.PriceInStotinki
+                ChangeToReturn = coinsValuesSum - product.Price
             };
         }
 
         return new SellProductDto
         {
             IsSuccess = false,
-            RemainingToInsert = product.PriceInStotinki - coinsValuesSum
+            RemainingToInsert = product.Price - coinsValuesSum
         };
     }
 }

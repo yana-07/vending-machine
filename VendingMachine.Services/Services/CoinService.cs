@@ -11,32 +11,19 @@ public class CoinService(
 {
     public async Task DepositAsync(Dictionary<byte, int> coins)
     {
-        var coinValuesToDeposit = coins.Keys;
-
-        var coinsToUpdate = await dbContext.Coins
-            .Where(coin => coins.Keys.Contains(coin.Value))
-            .ToListAsync();
-
-        var missingCoins = coinValuesToDeposit
-            .Except(coinsToUpdate.Select(coin => coin.Value));
-
-        if (missingCoins.Any())
+        foreach (var (value, quantity) in coins)
         {
-            throw new CoinNotFoundException($"Coins with the following values " +
-                $"do not exist: {string.Join(", ", missingCoins)}");
-        }
+            var coinToUpdate = await GetByValueAsync(value);
 
-        coinsToUpdate.ForEach(
-            coin => coin.Quantity += coins[coin.Value]);
+            coinToUpdate.Quantity += quantity;
+        }
 
         await dbContext.SaveChangesAsync();
     }
 
     public async Task DepositAsync(CoinDto coin)
     {
-        var coinToUpdate = await dbContext.Coins
-            .FirstOrDefaultAsync(coinToUpdate => coinToUpdate.Value == coin.Value) ??
-            throw new CoinNotFoundException($"A coin with value {coin.Value} does not exist.");
+        var coinToUpdate = await GetByValueAsync(coin.Value);
 
         coinToUpdate.Quantity += coin.Quantity;
 
@@ -45,32 +32,48 @@ public class CoinService(
 
     public async Task DecreaseInventoryAsync(Dictionary<byte, int> coins)
     {
-        var coinEntities = await dbContext.Coins
-            .Where(coin => coins.Keys.Contains(coin.Value))
-            .ToListAsync();
+        foreach (var (value, quantity) in coins)
+        {
+            var coinToUpdate = await GetByValueAsync(value);
 
-        coinEntities.ForEach(
-            coin => coin.Quantity -= coins[coin.Value]);
+            if (coinToUpdate.Quantity - quantity < 0)
+            {
+                throw new InvalidOperationException(
+                    $"Cannot decrease inventory of coin " +
+                    $"with value {coinToUpdate.Value} by {quantity}. " +
+                    $"Quantity cannot fall below zero. " +
+                    $"(available: {coinToUpdate.Quantity}).");
+            }
+
+            coinToUpdate.Quantity -= quantity;
+        }
 
         await dbContext.SaveChangesAsync();
     }
 
     public async Task DecreaseInventoryAsync(CoinDto coin)
     {
-        var coinToUpdate = await dbContext.Coins
-            .FirstOrDefaultAsync(coinToUpdate => coinToUpdate.Value == coin.Value) ?? 
-            throw new CoinNotFoundException($"A coin with value {coin.Value} does not exist.");
+        var coinToUpdate = await GetByValueAsync(coin.Value);
 
         if (coinToUpdate.Quantity - coin.Quantity < 0)
         {
             throw new InvalidOperationException(
-                $"Cannot collect {coin.Quantity} coins of value {coin.Value}. " +
-                $"Quantity cannot fall below zero. (available: {coinToUpdate.Quantity}).");
+                $"Cannot decrease inventory of coin " +
+                $"with value {coinToUpdate.Value} by {coin.Quantity}. " +
+                $"Quantity cannot fall below zero. " +
+                $"(available: {coinToUpdate.Quantity}).");
         }
 
         coinToUpdate.Quantity -= coin.Quantity;
 
         await dbContext.SaveChangesAsync();
+    }
+
+    private async Task<Coin> GetByValueAsync(byte value)
+    {
+        return await dbContext.Coins
+            .FirstOrDefaultAsync(coinEntity => coinEntity.Value == value) ??
+            throw new CoinNotFoundException(value);
     }
 
     public async Task<IEnumerable<CoinDto>> GetAllDescendingAsNoTrackingAsync()

@@ -8,15 +8,8 @@ public class CoinNotFoundException : Exception
     {
     }
 
-    public CoinNotFoundException(
-        string message)
-        : base(message)
-    {
-    }
-
-    public CoinNotFoundException(
-        string message, byte coinValue)
-        : base(message)
+    public CoinNotFoundException(byte coinValue)
+        : base($"Coin with value {coinValue} does not exist.")
     {
         CoinValue = coinValue;
     }

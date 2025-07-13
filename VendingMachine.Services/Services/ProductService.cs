@@ -30,7 +30,7 @@ public class ProductService(
 
     public async Task<Product> GetByCodeAsync(string code) => 
         await dbContext.Products.FirstOrDefaultAsync(product => product.Code == code) ?? 
-            throw new ProductNotFoundException($"Product with code {code} does not exist.", code);
+            throw new ProductNotFoundException(code);
   
 
     public async Task DecreaseInventory(string code)
@@ -76,7 +76,19 @@ public class ProductService(
         if (exists)
         {
             throw new InvalidOperationException(
-                $"A product with code {product.Code} already exists. You must remove it first.");
+                $"Product with code {product.Code} already exists.");
+        }
+
+        if (product.Quantity > ProductConstants.MaxQuantity)
+        {
+            throw new InvalidOperationException(
+                $"Product quantity cannot exceed {ProductConstants.MaxQuantity}");
+        }
+
+        if (product.Quantity < ProductConstants.MinQuantity)
+        {
+            throw new InvalidOperationException(
+                $"Product quantity cannot be less than {ProductConstants.MinQuantity}.");
         }
 
         dbContext.Products.Add(
