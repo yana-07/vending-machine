@@ -1,7 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using VendingMachine.Common.Exceptions;
 using VendingMachine.Data.Models;
-using VendingMachine.Data.Context;
 using VendingMachine.Services.DTOs;
 using VendingMachine.Common.Constants;
 using VendingMachine.Data.Repositories;
@@ -40,7 +39,7 @@ public class ProductService(
             .ToListAsync();
     }
   
-    public async Task DecreaseInventory(string code)
+    public async Task DecreaseInventoryAsync(string code)
     {
         var product = await GetByCodeAsync(code);
 

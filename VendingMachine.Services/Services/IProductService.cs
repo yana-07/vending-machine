@@ -11,7 +11,7 @@ public interface IProductService
 
     Task<IEnumerable<string>> GetAllCodesAsync();
 
-    Task DecreaseInventory(string code);
+    Task DecreaseInventoryAsync(string code);
 
     Task UpdateQuantityAsync(ProductQuantityUpdateDto product);
 

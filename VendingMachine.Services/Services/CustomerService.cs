@@ -208,7 +208,7 @@ public class CustomerService(
         if (sellProductResult.IsSuccess &&
             sellProductResult.RemainingToInsert == 0)
         {
-            await productService.DecreaseInventory(productCode);
+            await productService.DecreaseInventoryAsync(productCode);
 
             ansiConsole.MarkupLine("[green]Dispensing product...[/]");
 
