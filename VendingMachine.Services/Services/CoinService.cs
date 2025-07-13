@@ -2,12 +2,13 @@
 using VendingMachine.Common.Exceptions;
 using VendingMachine.Data.Context;
 using VendingMachine.Data.Models;
+using VendingMachine.Data.Repositories;
 using VendingMachine.Services.DTOs;
 
 namespace VendingMachine.Services.Services;
 
 public class CoinService(
-    VendingMachineDbContext dbContext) : ICoinService
+    IRepository<Coin> repository) : ICoinService
 {
     public async Task DepositAsync(Dictionary<byte, int> coins)
     {
@@ -18,7 +19,7 @@ public class CoinService(
             coinToUpdate.Quantity += quantity;
         }
 
-        await dbContext.SaveChangesAsync();
+        await repository.SaveChangesAsync();
     }
 
     public async Task DepositAsync(CoinDto coin)
@@ -27,7 +28,7 @@ public class CoinService(
 
         coinToUpdate.Quantity += coin.Quantity;
 
-        await dbContext.SaveChangesAsync();
+        await repository.SaveChangesAsync();
     }
 
     public async Task DecreaseInventoryAsync(Dictionary<byte, int> coins)
@@ -48,7 +49,7 @@ public class CoinService(
             coinToUpdate.Quantity -= quantity;
         }
 
-        await dbContext.SaveChangesAsync();
+        await repository.SaveChangesAsync();
     }
 
     public async Task DecreaseInventoryAsync(CoinDto coin)
@@ -66,26 +67,25 @@ public class CoinService(
 
         coinToUpdate.Quantity -= coin.Quantity;
 
-        await dbContext.SaveChangesAsync();
+        await repository.SaveChangesAsync();
     }
 
     private async Task<Coin> GetByValueAsync(byte value)
     {
-        return await dbContext.Coins
+        return await repository
             .FirstOrDefaultAsync(coinEntity => coinEntity.Value == value) ??
             throw new CoinNotFoundException(value);
     }
 
     public async Task<IEnumerable<CoinDto>> GetAllDescendingAsNoTrackingAsync()
     {
-        return await dbContext.Coins
+        return await repository.AllAsNoTracking()
             .OrderByDescending(coin => coin.Value)
             .Select(coin => new CoinDto
             {
                 Value = coin.Value,
                 Quantity = coin.Quantity
             })
-            .AsNoTracking()
             .ToListAsync();
     }
 }

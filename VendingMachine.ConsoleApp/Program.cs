@@ -9,6 +9,8 @@ using VendingMachine.Services.Services;
 using VendingMachine.Common.Helpers;
 using Spectre.Console;
 using Serilog;
+using VendingMachine.Data.Repositories;
+using VendingMachine.Data.Models;
 
 using var host = CreateHostBuilder(args).Build();
 
@@ -47,6 +49,8 @@ static IHostBuilder CreateHostBuilder(string[] args)
             .AddScoped<ICustomerService, CustomerService>()
             .AddScoped<IVendorService, VendorService>()
             .AddScoped<ITablePrinter, TablePrinter>()
+            .AddScoped<IRepository<Product>, Repository<Product>>()
+            .AddScoped<IRepository<Coin>, Repository<Coin>>()
             .AddScoped(_ => AnsiConsole.Console);
         });
 

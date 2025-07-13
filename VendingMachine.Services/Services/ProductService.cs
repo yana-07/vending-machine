@@ -4,17 +4,24 @@ using VendingMachine.Data.Models;
 using VendingMachine.Data.Context;
 using VendingMachine.Services.DTOs;
 using VendingMachine.Common.Constants;
+using VendingMachine.Data.Repositories;
 
 namespace VendingMachine.Services.Services;
 
 public class ProductService(
-    VendingMachineDbContext dbContext)
+    IRepository<Product> repository)
     : IProductService
 {
+    public async Task<Product> GetByCodeAsync(string code)
+    {
+        return await repository
+            .FirstOrDefaultAsync(product => product.Code == code) ??
+            throw new ProductNotFoundException(code);
+    }
+
     public async Task<IEnumerable<ProductDto>> GetAllAsNoTrackingAsync()
     {
-        return await dbContext.Products
-            .AsNoTracking()
+        return await repository.AllAsNoTracking()
             .Select(product => new ProductDto
             {
                 Name = product.Name,
@@ -28,16 +35,9 @@ public class ProductService(
 
     public async Task<IEnumerable<string>> GetAllCodesAsync()
     {
-        return await dbContext.Products
+        return await repository.AllAsNoTracking()
             .Select(product => product.Code)
             .ToListAsync();
-    }
-
-    public async Task<Product> GetByCodeAsync(string code)
-    {
-        return await dbContext.Products
-            .FirstOrDefaultAsync(product => product.Code == code) ??
-            throw new ProductNotFoundException(code);
     }
   
     public async Task DecreaseInventory(string code)
@@ -52,7 +52,7 @@ public class ProductService(
 
         product.Quantity--;
 
-        await dbContext.SaveChangesAsync();
+        await repository.SaveChangesAsync();
     }
 
     public async Task UpdateQuantityAsync(ProductQuantityUpdateDto product)
@@ -71,22 +71,22 @@ public class ProductService(
 
         var existingProduct = await GetByCodeAsync(product.Code);
         existingProduct.Quantity = product.Quantity;
-        await dbContext.SaveChangesAsync();
+        await repository.SaveChangesAsync();
     }
 
     public async Task RemoveAsync(string code)
     {
         var existingProduct = await GetByCodeAsync(code);
-        dbContext.Products.Remove(existingProduct); 
-        await dbContext.SaveChangesAsync();
+        repository.Delete(existingProduct);
+        await repository.SaveChangesAsync();
     }
 
     public async Task AddAsync(ProductDto product)
     {
-        var exists = await dbContext.Products
-            .AnyAsync(existingProduct => existingProduct.Code == product.Code);
+        var existingProduct = await repository.FirstOrDefaultAsync(
+            productEntity => productEntity.Code == product.Code);
 
-        if (exists)
+        if (existingProduct is not null)
         {
             throw new InvalidOperationException(
                 $"Product with code {product.Code} already exists.");
@@ -104,7 +104,7 @@ public class ProductService(
                 $"Product quantity cannot be less than {ProductConstants.MinQuantity}.");
         }
 
-        dbContext.Products.Add(
+        repository.Add(
             new Product
             { 
                 Code = product.Code,
@@ -113,19 +113,19 @@ public class ProductService(
                 Price = product.Price
             });
 
-        await dbContext.SaveChangesAsync();
+        await repository.SaveChangesAsync();
     }
 
     public async Task UpdatePriceAsync(ProductPriceUpdateDto product)
     {
         var existingProduct = await GetByCodeAsync(product.Code);
         existingProduct.Price = product.Price;
-        await dbContext.SaveChangesAsync();
+        await repository.SaveChangesAsync();
     }
 
     public async Task<bool> CanAddAsync()
     {
-        var productsCount = await dbContext.Products.CountAsync();
+        var productsCount = await repository.AllAsNoTracking().CountAsync();
 
         return productsCount < VendingMachineConstants.SlotLimit;
     }
