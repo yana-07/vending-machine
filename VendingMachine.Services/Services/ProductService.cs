@@ -44,6 +44,12 @@ public class ProductService(
     {
         var product = await GetByCodeAsync(code);
 
+        if (product.Quantity == 0)
+        {
+            throw new InvalidOperationException(
+                $"Product with code {code} is out of stock.");
+        }
+
         product.Quantity--;
 
         await dbContext.SaveChangesAsync();
