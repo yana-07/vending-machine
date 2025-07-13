@@ -11,28 +11,35 @@ public class ProductService(
     VendingMachineDbContext dbContext)
     : IProductService
 {
-    public async Task<IEnumerable<ProductDto>> GetAllAsNoTrackingAsync() =>
-        await dbContext.Products
-        .AsNoTracking()
-        .Select(product => new ProductDto
-        {
-            Name = product.Name,
-            Code = product.Code,
-            Price = product.Price,
-            Quantity = product.Quantity
-        })
-        .ToListAsync();
+    public async Task<IEnumerable<ProductDto>> GetAllAsNoTrackingAsync()
+    {
+        return await dbContext.Products
+            .AsNoTracking()
+            .Select(product => new ProductDto
+            {
+                Name = product.Name,
+                Code = product.Code,
+                Price = product.Price,
+                Quantity = product.Quantity
+            })
+            .ToListAsync();
+    }
 
-    public async Task<IEnumerable<string>> GetAllCodesAsync() => 
-        await dbContext.Products
-        .Select(product => product.Code)
-        .ToListAsync();
 
-    public async Task<Product> GetByCodeAsync(string code) => 
-        await dbContext.Products.FirstOrDefaultAsync(product => product.Code == code) ?? 
+    public async Task<IEnumerable<string>> GetAllCodesAsync()
+    {
+        return await dbContext.Products
+            .Select(product => product.Code)
+            .ToListAsync();
+    }
+
+    public async Task<Product> GetByCodeAsync(string code)
+    {
+        return await dbContext.Products
+            .FirstOrDefaultAsync(product => product.Code == code) ??
             throw new ProductNotFoundException(code);
+    }
   
-
     public async Task DecreaseInventory(string code)
     {
         var product = await GetByCodeAsync(code);
