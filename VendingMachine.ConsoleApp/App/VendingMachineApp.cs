@@ -11,15 +11,18 @@ public class VendingMachineApp(
 {
     public async Task RunAsync()
     {
-        var userRole = userService.RequestUserRole();
+        while (true)
+        {
+            var userRole = userService.RequestUserRole();
 
-        if (userRole == UserRoles.Customer)
-        {
-            await customerService.ServeCustomerAsync();
-        }
-        else if (userRole == UserRoles.Vendor)
-        {
-            await vendorService.ServeVendorAsync();
+            if (userRole == UserRoles.Customer)
+            {
+                await customerService.ServeCustomerAsync();
+            }
+            else if (userRole == UserRoles.Vendor)
+            {
+                await vendorService.ServeVendorAsync();
+            }
         }
     }
 }
