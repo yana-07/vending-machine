@@ -1,6 +1,8 @@
-﻿using Spectre.Console;
+﻿using Microsoft.Extensions.Logging;
+using Spectre.Console;
 using VendingMachine.Common.Constants;
 using VendingMachine.Common.Enums;
+using VendingMachine.Common.Exceptions;
 using VendingMachine.Common.Helpers;
 using VendingMachine.Services.DTOs;
 
@@ -10,7 +12,8 @@ public class VendorService(
     IAnsiConsole ansiConsole,
     IProductService productService,
     ICoinService coinService,
-    ITablePrinter tablePrinter) :
+    ITablePrinter tablePrinter,
+    ILogger<VendorService> logger) :
     IVendorService
 {
     public async Task ServeVendorAsync()
@@ -33,6 +36,7 @@ public class VendorService(
             if (selectedAction == VendorActions.Cancel)
             {
                 Console.Clear();
+                Console.WriteLine("\x1b[3J");
                 break;
             }
 
@@ -90,18 +94,11 @@ public class VendorService(
             var selection = ansiConsole.Prompt(
                 new SelectionPrompt<string>()
                     .Title($"Select product code:")
-
                     .AddChoices(choices));
 
             if (selection == nameof(VendorCommands.Back)) break;
 
-            var product = products.FirstOrDefault(product => product.Code == selection);
-
-            if (product is null)
-            {
-                ansiConsole.MarkupLine("[red]Invalid product code.[/]");
-                continue;
-            }
+            var product = products.First(product => product.Code == selection);
 
             var newQuantity = ansiConsole.Prompt(
                 new TextPrompt<byte>($"Enter new quantity for " +
@@ -116,14 +113,24 @@ public class VendorService(
             if (IsActionConfirmed($"Are you sure you want to update " +
                 $"the quantity of \"{product.Name}\" with code {selection} to {newQuantity}?"))
             {
-                await productService.UpdateQuantityAsync(
-                    new ProductQuantityUpdateDto
-                    {
-                        Code = selection,
-                        Quantity = newQuantity
-                    });
+                try
+                { 
+                    await productService.UpdateQuantityAsync(
+                        new ProductQuantityUpdateDto
+                        {
+                            Code = selection,
+                            Quantity = newQuantity
+                        });
 
-                ansiConsole.MarkupLine("[green]Quantity successfully updated.[/]");
+                    ansiConsole.MarkupLine("[green]Quantity successfully updated.[/]");
+                }
+                catch (Exception ex) 
+                    when (ex is InvalidOperationException || 
+                        ex is ProductNotFoundException)
+                {
+                    logger.LogError(ex, nameof(UpdateProductQuantityAsync));
+                    ansiConsole.MarkupLine($"[red]{ex.Message}[/]");
+                }
             }
         }
     }
@@ -145,13 +152,7 @@ public class VendorService(
 
             if (selection == nameof(VendorCommands.Back)) break;
 
-            var product = products.FirstOrDefault(product => product.Code == selection);
-
-            if (product is null)
-            {
-                ansiConsole.MarkupLine("[red]Invalid product code.[/]");
-                continue;
-            }
+            var product = products.First(product => product.Code == selection);
 
             var newPrice = ansiConsole.Prompt(
                 new TextPrompt<int>($"Enter new price (in stotinki) " +
@@ -161,14 +162,24 @@ public class VendorService(
             if (IsActionConfirmed($"Are you sure you want to update " +
                 $"the price of \"{product.Name}\" with code {selection} to {newPrice}st?"))
             {
-                await productService.UpdatePriceAsync(
-                    new ProductPriceUpdateDto
-                    {
-                        Code = selection,
-                        Price = newPrice
-                    });
-
-                ansiConsole.MarkupLine("[green]Price successfully updated.[/]");
+                try
+                {
+                    await productService.UpdatePriceAsync(
+                        new ProductPriceUpdateDto
+                        {
+                            Code = selection,
+                            Price = newPrice
+                        });
+                
+                    ansiConsole.MarkupLine("[green]Price successfully updated.[/]");
+                }
+                catch (Exception ex)
+                    when (ex is InvalidOperationException ||
+                        ex is ProductNotFoundException)
+                {
+                    logger.LogError(ex, nameof(UpdateProductPriceAsync));
+                    ansiConsole.MarkupLine($"[red]{ex.Message}[/]");
+                }
             }
         }
     }
@@ -177,7 +188,11 @@ public class VendorService(
     {
         while (true)
         {
-            if (!await productService.CanAddAsync()) break;
+            if (!await productService.CanAddAsync())
+            {
+                ansiConsole.MarkupLine("[red]No free slots available.[/]");
+                return;
+            }
 
             var code = ansiConsole.Prompt(
                 new TextPrompt<string>($"Enter product code:"));
@@ -204,15 +219,23 @@ public class VendorService(
                 $"Price: {price}st{Environment.NewLine}" +
                 $"Are you sure you want to add this product?"))
             {
-                await productService.AddAsync(new ProductDto
+                try
                 {
-                    Code = code,
-                    Name = name,
-                    Price = price,
-                    Quantity = quantity
-                });
+                    await productService.AddAsync(new ProductDto
+                    {
+                        Code = code,
+                        Name = name,
+                        Price = price,
+                        Quantity = quantity
+                    });
 
-                ansiConsole.MarkupLine("[green]Product successfully added.[/]");
+                    ansiConsole.MarkupLine("[green]Product successfully added.[/]");
+                }
+                catch (InvalidOperationException ex)
+                {
+                    logger.LogError(ex, nameof(AddProductAsync));
+                    ansiConsole.MarkupLine($"[red]{ex.Message}[/]");
+                }
             }
 
             var nextAction = ansiConsole.Prompt(
@@ -243,20 +266,21 @@ public class VendorService(
 
             if (selection == nameof(VendorCommands.Back)) break;
 
-            var product = products.FirstOrDefault(product => product.Code == selection);
-
-            if (product is null)
-            {
-                ansiConsole.MarkupLine("[red]Invalid product code.[/]");
-                continue;
-            }
+            var product = products.First(product => product.Code == selection);
 
             if (IsActionConfirmed($"Are you sure you want to remove " +
                 $"product \"{product.Name}\" with code {selection}?"))
             {
-                await productService.RemoveAsync(selection);
-
-                ansiConsole.MarkupLine("[green]Product successfully removed.[/]");
+                try
+                {
+                    await productService.RemoveAsync(selection);
+                    ansiConsole.MarkupLine("[green]Product successfully removed.[/]");
+                }
+                catch (ProductNotFoundException ex)
+                {
+                    logger.LogError(ex, nameof(RemoveProductAsync));
+                    AnsiConsole.MarkupLine($"[red]{ex.Message}[/]");
+                }
             }
         }
     }
@@ -285,16 +309,24 @@ public class VendorService(
                 if (IsActionConfirmed($"Are you sure you want " +
                     $"to deposit {quantity}x{selection}st?"))
                 {
-                    await coinService.DepositAsync(
-                        new CoinDto
-                        {
-                            Value = coinValue,
-                            Quantity = quantity
-                        });
+                    try
+                    {
+                        await coinService.DepositAsync(
+                            new CoinDto
+                            {
+                                Value = coinValue,
+                                Quantity = quantity
+                            });
 
-                    var coinsLabel = quantity > 1 ? "Coins" : "Coin";
+                        var coinsLabel = quantity > 1 ? "Coins" : "Coin";
 
-                    ansiConsole.MarkupLine($"[green]{coinsLabel} successfully deposited.[/]");
+                        ansiConsole.MarkupLine($"[green]{coinsLabel} successfully deposited.[/]");
+                    }
+                    catch (CoinNotFoundException ex)
+                    {
+                        logger.LogError(ex, nameof(DepositCoinsAsync));
+                        ansiConsole.MarkupLine($"[red]{ex.Message}[/]");
+                    }
                 }
             }
         }
@@ -324,14 +356,22 @@ public class VendorService(
                 if (IsActionConfirmed($"Are you sure you want " +
                     $"to collect {quantity}x{selection}st?"))
                 {
-                    await coinService.DecreaseInventoryAsync(
-                        new CoinDto
-                        {
-                            Value = coinValue,
-                            Quantity = quantity
-                        });
+                    try
+                    {
+                        await coinService.DecreaseInventoryAsync(
+                            new CoinDto
+                            {
+                                Value = coinValue,
+                                Quantity = quantity
+                            });
 
-                    ansiConsole.MarkupLine($"[green]Coins successfully collected.[/]");
+                        ansiConsole.MarkupLine($"[green]Coins successfully collected.[/]");
+                    }
+                    catch (CoinNotFoundException ex)
+                    {
+                        logger.LogError(ex, nameof(CollectCoinsAsync));
+                        ansiConsole.MarkupLine($"[red]{ex.Message}[/]");
+                    }
                 }
             }
         }
