@@ -62,6 +62,10 @@ public class ProductService(
                 $"Product quantity cannot exceed {ProductConstants.MaxQuantity}");
         }
 
+        // Check is currently redundand due to product quantity's
+        // numeric data type (byte is unsigned) and minimum quantity = 0.
+        // Remains in case minimum quantity is changed in the future.
+        // Cannot be tested at this point.
         if (product.Quantity < ProductConstants.MinQuantity)
         {
             throw new InvalidOperationException(
@@ -97,6 +101,10 @@ public class ProductService(
                 $"Product quantity cannot exceed {ProductConstants.MaxQuantity}");
         }
 
+        // Check is currently redundand due to product quantity's
+        // numeric data type (byte is unsigned) and minimum quantity = 0.
+        // Remains in case minimum quantity is changed in the future.
+        // Cannot be tested at this point.
         if (product.Quantity < ProductConstants.MinQuantity)
         {
             throw new InvalidOperationException(
