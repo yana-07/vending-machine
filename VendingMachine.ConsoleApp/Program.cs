@@ -51,6 +51,7 @@ static IHostBuilder CreateHostBuilder(string[] args)
             .AddScoped<ITablePrinter, TablePrinter>()
             .AddScoped<IRepository<Product>, Repository<Product>>()
             .AddScoped<IRepository<Coin>, Repository<Coin>>()
+            .AddScoped<ICurrencyFormatter, CurrencyFormatter>()
             .AddScoped(_ => AnsiConsole.Console);
         });
 
