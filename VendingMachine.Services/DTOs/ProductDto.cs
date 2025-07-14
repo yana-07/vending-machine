@@ -1,5 +1,4 @@
 ﻿using VendingMachine.Common.Attributes;
-using VendingMachine.Data.Models;
 
 namespace VendingMachine.Services.DTOs;
 
