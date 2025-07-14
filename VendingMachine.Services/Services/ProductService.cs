@@ -111,6 +111,11 @@ public class ProductService(
                 $"Product quantity cannot be less than {ProductConstants.MinQuantity}.");
         }
 
+        if (product.Price < 0)
+        {
+            throw new InvalidOperationException("Product price cannot be negative.");
+        }
+
         repository.Add(
             new Product
             { 
@@ -125,6 +130,11 @@ public class ProductService(
 
     public async Task UpdatePriceAsync(ProductPriceUpdateDto product)
     {
+        if (product.Price < 0)
+        {
+            throw new InvalidOperationException($"Product price cannot be negative.");
+        }
+
         var existingProduct = await GetByCodeAsync(product.Code);
         existingProduct.Price = product.Price;
         await repository.SaveChangesAsync();

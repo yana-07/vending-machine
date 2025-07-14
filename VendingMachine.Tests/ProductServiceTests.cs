@@ -381,6 +381,32 @@ namespace VendingMachine.Tests
                 Is.EqualTo($"Product quantity cannot exceed {ProductConstants.MaxQuantity}"));
         }
 
+        [TestCase(-1)]
+        [TestCase(-122)]
+        [TestCase(-250)]
+        public void AddAsync_ShallThrowException_ForNegativePrice(int price)
+        {
+            _repositoryMock.Setup(
+                mock => mock.FirstOrDefaultAsync(
+                    It.IsAny<Expression<Func<Product, bool>>>()))
+                .ReturnsAsync(It.IsAny<Product>);
+
+            var productDto = new ProductDto
+            {
+                Code = "A1",
+                Name = "Test",
+                Price = price,
+                Quantity = 7
+            };
+
+            var ex = Assert.ThrowsAsync<InvalidOperationException>(
+                async () => await _cut.AddAsync(productDto));
+
+            Assert.That(
+                ex.Message,
+                Is.EqualTo("Product price cannot be negative."));
+        }
+
         [TestCase("B5", "Lorem", 120, 1)]
         [TestCase("B6", "Impsum", 130, 2)]
         [TestCase("B7", "Dolor", 140, 3)]
@@ -435,6 +461,40 @@ namespace VendingMachine.Tests
             await _cut.UpdatePriceAsync(priceUpdateDto);
 
             Assert.That(product.Price, Is.EqualTo(priceUpdateDto.Price));
+        }
+
+        [TestCase("02", -1)]
+        [TestCase("B3", -70)]
+        [TestCase("04", -150)]
+        public void UpdatePriceAsync_ShallThrowException_ForNegativePrice
+            (string code, int price)
+        {
+            var product = new Product
+            {
+                Id = 1,
+                Code = code,
+                Name = "Name",
+                Price = 120,
+                Quantity = 5
+            };
+
+            _repositoryMock.Setup(
+                mock => mock.FirstOrDefaultAsync(
+                    It.IsAny<Expression<Func<Product, bool>>>()))
+                .ReturnsAsync(product);
+
+            var priceUpdateDto = new ProductPriceUpdateDto
+            {
+                Code = code,
+                Price = price
+            };
+
+            var ex = Assert.ThrowsAsync<InvalidOperationException>(
+                async () => await _cut.UpdatePriceAsync(priceUpdateDto));
+
+            Assert.That(
+                ex.Message,
+                Is.EqualTo("Product price cannot be negative."));
         }
 
         [Test]
