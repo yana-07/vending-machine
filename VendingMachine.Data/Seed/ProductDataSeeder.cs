@@ -6,5 +6,6 @@ namespace VendingMachine.Data.Seed;
 public class ProductDataSeeder(VendingMachineDbContext dbContext) 
     : DataSeeder<Product>(dbContext)
 {
-    protected override string FilePath => "productDataSeed.json";
+    protected override string FilePath => Path.Combine(
+        AppContext.BaseDirectory, "productDataSeed.json");
 }
