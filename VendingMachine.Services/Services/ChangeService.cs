@@ -110,7 +110,6 @@ public class ChangeService(ICoinService coinService)
     private async Task<ChangeDto> GenerateChangeFromInventory(
         int changeToreturn)
     {
-        const int MinCoinQuantity = 10;
         int remainingChange = changeToreturn;
 
         var coins = await coinService.GetAllDescendingAsNoTrackingAsync();
@@ -119,7 +118,7 @@ public class ChangeService(ICoinService coinService)
 
         foreach (var coin in coins)
         {
-            while (coin.Quantity > MinCoinQuantity &&
+            while (coin.Quantity > 0 &&
                 remainingChange - coin.Value >= 0)
             {
                 if (returnedCoins.TryGetValue(coin.Value, out int _))
