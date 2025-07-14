@@ -9,7 +9,7 @@ public class ProductDto
 
     public required string Name { get; init; }
 
-    [FormatAsCurrency]
+    [Price]
     public required int Price { get; init; }
 
     public required byte Quantity { get; init; }

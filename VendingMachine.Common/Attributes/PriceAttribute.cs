@@ -1,10 +1,9 @@
 ﻿namespace VendingMachine.Common.Attributes;
 
 [AttributeUsage(AttributeTargets.Property)]
-public class FormatAsCurrencyAttribute(
-    string format = "F2", string suffix = "lv") 
+public class PriceAttribute(
+    string format = "F2") 
     : Attribute
 {
     public string Format { get; } = format;
-    public string Suffix { get; } = suffix;
 }
