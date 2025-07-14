@@ -22,9 +22,6 @@ public class CustomerService(
 
         await ProcessTransactionAsync();
 
-        ansiConsole.MarkupLine("Press any key to continue.");
-        Console.ReadKey();
-
         Console.Clear();
         Console.WriteLine("\x1b[3J");
     }
@@ -35,11 +32,12 @@ public class CustomerService(
 
         tablePrinter.Print(
             products.Select(
-                product => new ProductPrintDto
+                product => new ProductDto
                 {
                     Name = product.Name,
                     Code = product.Code,
-                    Price = $"{product.Price / (decimal)100:F2}lv",
+                    Price = product.Price,
+                    Quantity = product.Quantity,
                 }));
     }
 
@@ -72,7 +70,7 @@ public class CustomerService(
                 {
                     if (insertedCoins.Count > 0) 
                         ReturnInserted(insertedCoins);
-                    return;
+                    break;
                 }
             }
 
@@ -82,14 +80,14 @@ public class CustomerService(
                 if (productRequestResult.IsCancelled)
                 {
                     ReturnInserted(insertedCoins);
-                    return;
+                    break;
                 }
             }
 
             try
             {
                 if (await TryProcessPurchase(productRequestResult.ProductCode, insertedCoins))
-                    return;
+                    break;
             }
             catch (Exception ex) 
                 when (ex is ProductNotFoundException || 
@@ -105,6 +103,12 @@ public class CustomerService(
             productRequestResult = null;
             coinRequestResult = null;
         }
+
+        if (insertedCoins.Count > 0)
+        {
+            ansiConsole.MarkupLine("Press any key to continue.");
+            Console.ReadKey();
+        }   
     }
 
     private CoinRequestResultDto RequestCoins(int alreadyInsertedAmount)
@@ -119,7 +123,9 @@ public class CustomerService(
                .Title("Insert a coin:")
                .AddChoices(
                     CoinConstants.AllowedCoins
-                    .Select(coin => coin.ToString()));
+                    .Select(coin => coin >= 100 ? 
+                            string.Format(VendingMachineConstants.CurrencyFormatRaw, coin / 100m) :
+                            $"{coin}st"));
 
             if (alreadyInsertedAmount > 0 || coinRequestResult.InsertedCoins.Count > 0)
             {
@@ -142,8 +148,20 @@ public class CustomerService(
                 return coinRequestResult;
             }
 
-            if (byte.TryParse(selection, out var coinValue) &&
-                CoinConstants.AllowedCoins.Contains(coinValue))
+            bool isStotinki = byte.TryParse(
+                selection.Replace("st", string.Empty),
+                out var coinValue);
+
+            bool isLeva = decimal.TryParse(
+                selection.Replace("lv", string.Empty),
+                out var coinValueAsDecimal);
+
+            if (isLeva)
+            {
+                coinValue = (byte)(coinValueAsDecimal * 100);
+            }
+
+            if (CoinConstants.AllowedCoins.Contains(coinValue))
             {
                 coinRequestResult.IsValid = true;
                 if (coinRequestResult.InsertedCoins.TryGetValue(coinValue, out int _))
@@ -210,7 +228,9 @@ public class CustomerService(
         {
             await productService.DecreaseInventoryAsync(productCode);
 
-            ansiConsole.MarkupLine("[green]Dispensing product...[/]");
+            var product = await productService.GetByCodeAsync(productCode);
+
+            ansiConsole.MarkupLine($"[green]Dispensing \"{product.Name}\"...[/]");
 
             var changeResult = await changeService.GenerateChange(
                 insertedCoins, sellProductResult.ChangeToReturn);
@@ -225,6 +245,10 @@ public class CustomerService(
             if (changeResult.ReturnedCoins.Count > 0)
             {
                 ReturnInserted(changeResult.ReturnedCoins);              
+            }
+            else
+            {
+                ansiConsole.MarkupLine("[yellow]No change to return.[/]");
             }
 
             return true;

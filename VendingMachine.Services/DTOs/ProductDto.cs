@@ -1,4 +1,7 @@
-﻿namespace VendingMachine.Services.DTOs;
+﻿using VendingMachine.Common.Attributes;
+using VendingMachine.Data.Models;
+
+namespace VendingMachine.Services.DTOs;
 
 public class ProductDto
 {
@@ -6,7 +9,8 @@ public class ProductDto
 
     public required string Name { get; init; }
 
-    public required byte Quantity { get; init; }
-
+    [FormatAsCurrency]
     public required int Price { get; init; }
+
+    public required byte Quantity { get; init; }
 }
