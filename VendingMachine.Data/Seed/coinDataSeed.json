@@ -1,22 +1,22 @@
 ﻿[
   {
     "value": 10,
-    "quantity": 1000
+    "quantity": 100
   },
   {
     "value": 20,
-    "quantity": 1000
+    "quantity": 50
   },
   {
     "value": 50,
-    "quantity": 1000
+    "quantity": 30
   },
   {
     "value": 100,
-    "quantity": 1000
+    "quantity": 15
   },
   {
     "value": 200,
-    "quantity": 1000
+    "quantity": 15
   }
 ]
