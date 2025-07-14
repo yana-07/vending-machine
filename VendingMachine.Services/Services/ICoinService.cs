@@ -13,4 +13,6 @@ public interface ICoinService
     Task DecreaseInventoryAsync(CoinDto coin);
 
     Task<IEnumerable<CoinDto>> GetAllDescendingAsNoTrackingAsync();
+
+    byte ParseCoinValue(string value);
 }

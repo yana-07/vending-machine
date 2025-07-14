@@ -1,10 +1,11 @@
 ﻿using System.Reflection;
 using VendingMachine.Common.Attributes;
-using VendingMachine.Common.Constants;
 
 namespace VendingMachine.Common.Helpers;
 
-public class TablePrinter : ITablePrinter
+public class TablePrinter(
+    ICurrencyFormatter currencyFormatter) : 
+    ITablePrinter
 {
     public void Print<T>(IEnumerable<T> items)
     {
@@ -25,16 +26,26 @@ public class TablePrinter : ITablePrinter
             foreach (var property in properties)
             {
                 var value = property.GetValue(item);
-                var formatAsCurrenCyAttribute = property.GetCustomAttribute<FormatAsCurrencyAttribute>();
-                if (formatAsCurrenCyAttribute is not null && value is int intValue)
+
+                var isPriceAttribute = property
+                    .GetCustomAttribute<PriceAttribute>();
+                var isCoinValuettribute = property
+                    .GetCustomAttribute<CoinValueAttribute>();
+
+                string? formatted = null;
+
+                if (isPriceAttribute is not null && value is int priceInStotinki)
                 {
-                    value = string.Format(
-                        VendingMachineConstants.CurrencyFormatWithDecimals, intValue / 100m);
+                    formatted = currencyFormatter.FormatPrice(priceInStotinki);
+                }
+                else if (isCoinValuettribute is not null && value is byte coinValue)
+                {
+                    formatted = currencyFormatter.FormatCoinValue(coinValue);
                 }
 
                 Console.Write(
                     $"{{0,-{ColumnWidth}}}|",
-                   value);
+                    formatted ?? value);
             }
 
             Console.WriteLine();

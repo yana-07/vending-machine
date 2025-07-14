@@ -13,6 +13,7 @@ public class VendorService(
     IProductService productService,
     ICoinService coinService,
     ITablePrinter tablePrinter,
+    ICurrencyFormatter currencyFormatter,
     ILogger<VendorService> logger) :
     IVendorService
 {
@@ -154,13 +155,22 @@ public class VendorService(
 
             var product = products.First(product => product.Code == selection);
 
-            var newPrice = ansiConsole.Prompt(
-                new TextPrompt<int>($"Enter new price (in stotinki) " +
+            var price = ansiConsole.Prompt(
+                new TextPrompt<decimal>($"Enter new price (in leva) " +
                     $"for \"{product.Name}\" with code {selection}:")
+                .Validate(input =>
+                {
+                    return input * 100 > int.MaxValue ?
+                        ValidationResult.Error("[red]Price is too large.[/]") :
+                        ValidationResult.Success();
+                })
                 .ValidationErrorMessage("[red]Invalid product price.[/]"));
 
+            price = Math.Round(price, 2);
+
             if (IsActionConfirmed($"Are you sure you want to update " +
-                $"the price of \"{product.Name}\" with code {selection} to {newPrice}st?"))
+                $"the price of \"{product.Name}\" with code {selection} to {price}" +
+                $"{CurrencyConstants.LevaSuffix}?"))
             {
                 try
                 {
@@ -168,7 +178,7 @@ public class VendorService(
                         new ProductPriceUpdateDto
                         {
                             Code = selection,
-                            Price = newPrice
+                            Price = (int)(price * 100)
                         });
                 
                     ansiConsole.MarkupLine("[green]Price successfully updated.[/]");
@@ -201,7 +211,16 @@ public class VendorService(
                 new TextPrompt<string>("Enter product name:"));
 
             var price = ansiConsole.Prompt(
-                new TextPrompt<int>("Enter product price (in stotinki):"));
+                new TextPrompt<decimal>("Enter new price (in leva)")
+                .Validate(input =>
+                {
+                    return input * 100 > int.MaxValue ?
+                        ValidationResult.Error("[red]Price is too large.[/]") :
+                        ValidationResult.Success();
+                })
+                .ValidationErrorMessage("[red]Invalid product price.[/]"));
+
+            price = Math.Round(price, 2);
 
             var quantity = ansiConsole.Prompt(
                 new TextPrompt<byte>("Enter product quantity:")
@@ -216,7 +235,7 @@ public class VendorService(
                 $"Code: {code}{Environment.NewLine}" +
                 $"Name: {name}{Environment.NewLine}" +
                 $"Quantity: {quantity}{Environment.NewLine}" +
-                $"Price: {price}st{Environment.NewLine}" +
+                $"Price: {price}{CurrencyConstants.LevaSuffix}{Environment.NewLine}" +
                 $"Are you sure you want to add this product?"))
             {
                 try
@@ -225,7 +244,7 @@ public class VendorService(
                     {
                         Code = code,
                         Name = name,
-                        Price = price,
+                        Price = (int)(price * 100),
                         Quantity = quantity
                     });
 
@@ -288,7 +307,8 @@ public class VendorService(
     private async Task DepositCoinsAsync()
     {
         string[] choices = [
-            .. CoinConstants.AllowedCoins.Select(coin => coin.ToString()),
+            .. CoinConstants.AllowedCoins.Select(
+                coin => currencyFormatter.FormatCoinValue(coin)),
             nameof(VendorCommands.Back)];
 
         while (true)
@@ -300,14 +320,15 @@ public class VendorService(
 
             if (selection == nameof(VendorCommands.Back)) break;
 
-            if (byte.TryParse(selection, out byte coinValue) &&
-                CoinConstants.AllowedCoins.Contains(coinValue))
+            var coinValue = coinService.ParseCoinValue(selection);
+
+            if (CoinConstants.AllowedCoins.Contains(coinValue))
             {
                 var quantity = ansiConsole.Prompt(
                     new TextPrompt<int>("Enter coin quantity:"));
 
                 if (IsActionConfirmed($"Are you sure you want " +
-                    $"to deposit {quantity}x{selection}st?"))
+                    $"to deposit {quantity}x{selection}?"))
                 {
                     try
                     {
@@ -335,7 +356,8 @@ public class VendorService(
     private async Task CollectCoinsAsync()
     {
         string[] choices = [
-            .. CoinConstants.AllowedCoins.Select(coin => coin.ToString()),
+            .. CoinConstants.AllowedCoins.Select(
+                coin => currencyFormatter.FormatCoinValue(coin)),
             nameof(VendorCommands.Back)];
 
         while (true)
@@ -347,14 +369,15 @@ public class VendorService(
 
             if (selection == nameof(VendorCommands.Back)) break;
 
-            if (byte.TryParse(selection, out byte coinValue) &&
-                CoinConstants.AllowedCoins.Contains(coinValue))
+            var coinValue = coinService.ParseCoinValue(selection);
+
+            if (CoinConstants.AllowedCoins.Contains(coinValue))
             {
                 var quantity = ansiConsole.Prompt(
                     new TextPrompt<int>("Enter coin quantity:"));
 
                 if (IsActionConfirmed($"Are you sure you want " +
-                    $"to collect {quantity}x{selection}st?"))
+                    $"to collect {quantity}x{selection}?"))
                 {
                     try
                     {
@@ -367,7 +390,9 @@ public class VendorService(
 
                         ansiConsole.MarkupLine($"[green]Coins successfully collected.[/]");
                     }
-                    catch (CoinNotFoundException ex)
+                    catch (Exception ex) when (
+                        ex is CoinNotFoundException || 
+                        ex is InvalidOperationException)
                     {
                         logger.LogError(ex, nameof(CollectCoinsAsync));
                         ansiConsole.MarkupLine($"[red]{ex.Message}[/]");

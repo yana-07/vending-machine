@@ -1,6 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using VendingMachine.Common.Constants;
 using VendingMachine.Common.Exceptions;
-using VendingMachine.Data.Context;
 using VendingMachine.Data.Models;
 using VendingMachine.Data.Repositories;
 using VendingMachine.Services.DTOs;
@@ -40,9 +40,8 @@ public class CoinService(
             if (coinToUpdate.Quantity - quantity < 0)
             {
                 throw new InvalidOperationException(
-                    $"Cannot decrease inventory of coin " +
-                    $"with value {coinToUpdate.Value} by {quantity}. " +
-                    $"Quantity cannot fall below zero. " +
+                    $"Cannot decrease coin inventory " +
+                    $"by {quantity} " +
                     $"(available: {coinToUpdate.Quantity}).");
             }
 
@@ -59,9 +58,8 @@ public class CoinService(
         if (coinToUpdate.Quantity - coin.Quantity < 0)
         {
             throw new InvalidOperationException(
-                $"Cannot decrease inventory of coin " +
-                $"with value {coinToUpdate.Value} by {coin.Quantity}. " +
-                $"Quantity cannot fall below zero. " +
+                $"Cannot decrease coin inventory " +
+                $"by {coin.Quantity} " +
                 $"(available: {coinToUpdate.Quantity}).");
         }
 
@@ -87,5 +85,25 @@ public class CoinService(
                 Quantity = coin.Quantity
             })
             .ToListAsync();
+    }
+
+    public byte ParseCoinValue(string value)
+    {
+        string valueWithoutCurrency = value
+            .Replace(CurrencyConstants.LevaSuffix, string.Empty)
+            .Replace(CurrencyConstants.StotinkiSuffix, string.Empty);
+
+        if (!byte.TryParse(valueWithoutCurrency, out var valueAsByte))
+        {
+            throw new InvalidOperationException(
+                $"Invalid coin value: {value}.");
+        }
+
+        if (value.Contains(CurrencyConstants.LevaSuffix))
+        {
+            valueAsByte *= 100;
+        }
+
+        return valueAsByte;
     }
 }

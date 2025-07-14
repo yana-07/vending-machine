@@ -10,9 +10,11 @@ namespace VendingMachine.Services.Services;
 
 public class CustomerService(
     IProductService productService,
+    ICoinService coinService,
     IChangeService changeService,
     ITablePrinter tablePrinter,
     IAnsiConsole ansiConsole,
+    ICurrencyFormatter currencyFormatter,
     ILogger<CustomerService> logger)
     : ICustomerService
 {
@@ -123,9 +125,7 @@ public class CustomerService(
                .Title("Insert a coin:")
                .AddChoices(
                     CoinConstants.AllowedCoins
-                    .Select(coin => coin >= 100 ? 
-                            string.Format(VendingMachineConstants.CurrencyFormatRaw, coin / 100m) :
-                            $"{coin}st"));
+                    .Select(coin => currencyFormatter.FormatCoinValue(coin)));
 
             if (alreadyInsertedAmount > 0 || coinRequestResult.InsertedCoins.Count > 0)
             {
@@ -148,18 +148,7 @@ public class CustomerService(
                 return coinRequestResult;
             }
 
-            bool isStotinki = byte.TryParse(
-                selection.Replace("st", string.Empty),
-                out var coinValue);
-
-            bool isLeva = decimal.TryParse(
-                selection.Replace("lv", string.Empty),
-                out var coinValueAsDecimal);
-
-            if (isLeva)
-            {
-                coinValue = (byte)(coinValueAsDecimal * 100);
-            }
+            var coinValue = coinService.ParseCoinValue(selection);
 
             if (CoinConstants.AllowedCoins.Contains(coinValue))
             {
@@ -180,7 +169,8 @@ public class CustomerService(
 
                 ansiConsole.MarkupLine(
                     "[green]Total inserted: " +
-                    $"{totalInsertedAmount / (decimal)100:F2}lv[/]");
+                    $"{totalInsertedAmount / 100m:F2}" +
+                    $"{CurrencyConstants.LevaSuffix}[/]");
             }
         }
     }
@@ -188,11 +178,12 @@ public class CustomerService(
     private void ReturnInserted(Dictionary<byte, int> coins)
     {
         ansiConsole.MarkupLine("[blue]Returning inserted coins...[/]");
-        foreach (var (nominalValue, quantity) in coins)
+        foreach (var (value, quantity) in coins)
         {
             for (int i = 0; i < quantity; i++)
             {
-                ansiConsole.MarkupLine(nominalValue.ToString());
+                var formatted = currencyFormatter.FormatCoinValue(value);
+                ansiConsole.MarkupLine(formatted);
             }
         }
     }
@@ -239,7 +230,8 @@ public class CustomerService(
             {
                 ansiConsole.MarkupLine(
                     "[yellow]The following amount could not be returned: " +
-                    $"{changeResult.RemainingChange / (decimal)100:F2}lv.[/]");
+                    $"{changeResult.RemainingChange / 100m:F2}" +
+                    $"{CurrencyConstants.LevaSuffix}.[/]");
             }
 
             if (changeResult.ReturnedCoins.Count > 0)
@@ -293,7 +285,8 @@ public class CustomerService(
             IsSuccess = false,
             RemainingToInsert = remainingToInsert,
             ErrorMessage = "[red]Insufficient funds. Insert " +
-                $"{remainingToInsert / (decimal)100:F2}lv more to continue.[/]"
+                $"{remainingToInsert / 100m:F2}" +
+                $"{CurrencyConstants.LevaSuffix} more to continue.[/]"
         };
     }
 }
