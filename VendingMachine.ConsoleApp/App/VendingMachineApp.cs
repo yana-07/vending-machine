@@ -33,9 +33,10 @@ public class VendingMachineApp(
         }
         catch (Exception ex)
         {
-            var message = "An unexpected error occurred.";
-            ansiConsole.MarkupLine($"[red]{message}[/]");
-            logger.LogError(ex, message);
+            var message = "An unexpected error occurred";
+            ansiConsole.MarkupLine($"[red]{message}.[/]");
+            logger.LogError(ex, "{Message} in {Method}",
+                message, nameof(RunAsync));
         }
     }
 }

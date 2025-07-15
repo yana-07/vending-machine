@@ -211,8 +211,7 @@ public class VendorService(
                 }
                 catch (InvalidOperationException ex)
                 {
-                    logger.LogError(ex, nameof(AddProductAsync));
-                    ansiConsole.MarkupLine($"[red]{ex.Message}[/]");
+                    LogError(ex, nameof(AddProductAsync));
                 }
             }
 
@@ -252,8 +251,7 @@ public class VendorService(
                 }
                 catch (ProductNotFoundException ex)
                 {
-                    logger.LogError(ex, nameof(RemoveProductAsync));
-                    AnsiConsole.MarkupLine($"[red]{ex.Message}[/]");
+                    LogError(ex, nameof(RemoveProductAsync));
                 }
             }
         }
@@ -297,8 +295,7 @@ public class VendorService(
                     }
                     catch (CoinNotFoundException ex)
                     {
-                        logger.LogError(ex, nameof(DepositCoinsAsync));
-                        ansiConsole.MarkupLine($"[red]{ex.Message}[/]");
+                        LogError(ex, nameof(DepositCoinsAsync));                       
                     }
                 }
             }
@@ -343,8 +340,7 @@ public class VendorService(
                         ex is CoinNotFoundException || 
                         ex is InvalidOperationException)
                     {
-                        logger.LogError(ex, nameof(CollectCoinsAsync));
-                        ansiConsole.MarkupLine($"[red]{ex.Message}[/]");
+                        LogError(ex, nameof(CollectCoinsAsync));
                     }
                 }
             }
@@ -429,7 +425,7 @@ public class VendorService(
 
     private void LogError(Exception ex, string methodName)
     {
-        logger.LogError(ex, methodName);
+        logger.LogError(ex, "An error occurred in {Method}.", methodName);
         ansiConsole.MarkupLine($"[red]{ex.Message}[/]");
     }
 }

@@ -86,7 +86,8 @@ public class CustomerService(
                     ex is InvalidOperationException ||
                     ex is CoinNotFoundException)
             {
-                logger.LogError(ex, nameof(ProcessTransactionAsync));
+                logger.LogError(ex, "An error occurred in {Method}.",
+                    nameof(ProcessTransactionAsync));
                 ansiConsole.MarkupLine($"[red]{ex.Message}[/]");
                 productRequestResult = null;
                 continue;
