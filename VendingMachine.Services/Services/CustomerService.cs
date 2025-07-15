@@ -126,21 +126,21 @@ public class CustomerService(
 
             if (alreadyInsertedAmount > 0 || coinRequestResult.InsertedCoins.Count > 0)
             {
-                selectionPrompt.AddChoice(nameof(CustomerCommands.Continue));
+                selectionPrompt.AddChoice(nameof(CustomerCommand.Continue));
             }
 
-            selectionPrompt.AddChoice(nameof(CustomerCommands.Cancel));
+            selectionPrompt.AddChoice(nameof(CustomerCommand.Cancel));
 
             var selection = ansiConsole.Prompt(selectionPrompt);
 
-            if (selection == nameof(CustomerCommands.Cancel))
+            if (selection == nameof(CustomerCommand.Cancel))
             {
                 coinRequestResult.IsCancelled = true;
 
                 return coinRequestResult;
             }
 
-            if (selection == nameof(CustomerCommands.Continue))
+            if (selection == nameof(CustomerCommand.Continue))
             {
                 return coinRequestResult;
             }
@@ -191,14 +191,14 @@ public class CustomerService(
     private async Task<ProductRequestResultDto> RequestProductAsync()
     {
         var productCodes = await productService.GetAllCodesAsync();
-        string[] choices = [.. productCodes, nameof(CustomerCommands.Cancel)];
+        string[] choices = [.. productCodes, nameof(CustomerCommand.Cancel)];
 
         var selection = ansiConsole.Prompt(
             new SelectionPrompt<string>()
                 .Title($"Select product code:")
                 .AddChoices(choices));
 
-        bool isCancelled = selection == nameof(CustomerCommands.Cancel);
+        bool isCancelled = selection == nameof(CustomerCommand.Cancel);
 
         return new ProductRequestResultDto
         {

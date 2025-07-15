@@ -23,17 +23,17 @@ public class VendorService(
             var selectedAction = RequestAction();
             switch (selectedAction)
             {
-                case VendorActions.View_Products:
+                case VendorAction.View_Products:
                     tablePrinter.Print(await productService
                         .GetAllAsNoTrackingAsync());
                     break;
-                case VendorActions.View_Coins:
+                case VendorAction.View_Coins:
                     tablePrinter.Print(await coinService
                         .GetAllAsNoTrackingAsync());
                     break;
             }
 
-            if (selectedAction == VendorActions.Cancel)
+            if (selectedAction == VendorAction.Cancel)
             {
                 Console.Clear();
                 Console.WriteLine("\x1b[3J");
@@ -44,38 +44,38 @@ public class VendorService(
         }
     }
 
-    private VendorActions RequestAction()
+    private VendorAction RequestAction()
     {
         return ansiConsole.Prompt(
-            new SelectionPrompt<VendorActions>().Title("Select action:")
+            new SelectionPrompt<VendorAction>().Title("Select action:")
                 .UseConverter(action => action.ToString().Replace('_', ' '))
-                .AddChoices(Enum.GetValues<VendorActions>()));
+                .AddChoices(Enum.GetValues<VendorAction>()));
     }
 
     private async Task ProcessVendorActionAsync(
-        VendorActions action)
+        VendorAction action)
     {
-        if (action == VendorActions.Update_Product_Quantity)
+        if (action == VendorAction.Update_Product_Quantity)
         {
             await UpdateProductQuantityAsync();
         }
-        else if (action == VendorActions.Update_Product_Price)
+        else if (action == VendorAction.Update_Product_Price)
         {
             await UpdateProductPriceAsync();
         }
-        else if (action == VendorActions.Add_Product)
+        else if (action == VendorAction.Add_Product)
         {
             await AddProductAsync();
         }
-        else if (action == VendorActions.Remove_Product)
+        else if (action == VendorAction.Remove_Product)
         {
             await RemoveProductAsync();
         }
-        else if (action == VendorActions.Deposit_Coins)
+        else if (action == VendorAction.Deposit_Coins)
         {
             await DepositCoinsAsync();
         }
-        else if (action == VendorActions.Collect_Coins)
+        else if (action == VendorAction.Collect_Coins)
         {
             await CollectCoinsAsync();
         }
@@ -89,11 +89,11 @@ public class VendorService(
 
             string[] choices = [
                 .. products.Select(product => product.Code),
-                nameof(VendorCommands.Back)];
+                nameof(VendorCommand.Back)];
 
             var selection = PromptSelection("Select product code:", choices);
 
-            if (selection == nameof(VendorCommands.Back)) break;
+            if (selection == nameof(VendorCommand.Back)) break;
 
             var product = products.First(product => product.Code == selection);
 
@@ -140,11 +140,11 @@ public class VendorService(
 
             string[] choices = [
                 .. products.Select(product => product.Code),
-                nameof(VendorCommands.Back)];
+                nameof(VendorCommand.Back)];
 
             var selection = PromptSelection("Select product code:", choices);
 
-            if (selection == nameof(VendorCommands.Back)) break;
+            if (selection == nameof(VendorCommand.Back)) break;
 
             var product = products.First(product => product.Code == selection);
 
@@ -264,11 +264,11 @@ public class VendorService(
 
             string[] choices = [
                 "Add new product",
-                nameof(VendorCommands.Back)];
+                nameof(VendorCommand.Back)];
 
             var nextAction = PromptSelection("What would you like to do next?", choices);
 
-            if (nextAction == nameof(VendorCommands.Back)) break;
+            if (nextAction == nameof(VendorCommand.Back)) break;
         }
     }
 
@@ -280,11 +280,11 @@ public class VendorService(
 
             string[] choices = [
                 .. products.Select(product => product.Code),
-                nameof(VendorCommands.Back)];
+                nameof(VendorCommand.Back)];
 
             var selection = PromptSelection("Select product code:", choices);
 
-            if (selection == nameof(VendorCommands.Back)) break;
+            if (selection == nameof(VendorCommand.Back)) break;
 
             var product = products.First(product => product.Code == selection);
 
@@ -311,13 +311,13 @@ public class VendorService(
 
         string[] choices = [
             .. coins.Select(coin => coin.Denomination),
-            nameof(VendorCommands.Back)];
+            nameof(VendorCommand.Back)];
 
         while (true)
         {
             var selection = PromptSelection("Deposit coin:", choices);
 
-            if (selection == nameof(VendorCommands.Back)) break;
+            if (selection == nameof(VendorCommand.Back)) break;
 
             var coinValue = coinService.ParseCoinValue(selection);
 
@@ -360,13 +360,13 @@ public class VendorService(
 
         string[] choices = [
             .. coins.Select(coin => coin.Denomination),
-            nameof(VendorCommands.Back)];
+            nameof(VendorCommand.Back)];
 
         while (true)
         {
             var selection = PromptSelection("Collect coins:", choices);
 
-            if (selection == nameof(VendorCommands.Back)) break;
+            if (selection == nameof(VendorCommand.Back)) break;
 
             var coinValue = coinService.ParseCoinValue(selection);
 

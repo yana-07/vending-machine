@@ -7,12 +7,12 @@ public class UserService(
     IAnsiConsole ansiConsole)
     : IUserService
 {
-    public UserRoles RequestUserRole()
+    public UserRole RequestUserRole()
     {
         var selecteRole = ansiConsole.Prompt(
-            new SelectionPrompt<UserRoles>()
+            new SelectionPrompt<UserRole>()
                 .Title("Are you a customer or a vendor:")
-                .AddChoices(Enum.GetValues<UserRoles>()));
+                .AddChoices(Enum.GetValues<UserRole>()));
 
         return selecteRole;
     }

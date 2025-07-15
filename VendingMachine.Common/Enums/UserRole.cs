@@ -1,6 +1,7 @@
 ﻿namespace VendingMachine.Common.Enums;
 
-public enum VendorCommands
+public enum UserRole
 {
-    Back
+    Customer,
+    Vendor
 }

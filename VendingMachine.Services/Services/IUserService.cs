@@ -4,5 +4,5 @@ namespace VendingMachine.Services.Services;
 
 public interface IUserService
 {
-    public UserRoles RequestUserRole();
+    public UserRole RequestUserRole();
 }

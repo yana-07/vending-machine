@@ -1,6 +1,6 @@
 ﻿namespace VendingMachine.Common.Enums;
 
-public enum VendorActions
+public enum VendorAction
 {
     View_Products,
     View_Coins,
