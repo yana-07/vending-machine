@@ -12,16 +12,4 @@ public class CurrencyFormatter : ICurrencyFormatter
             $"{{0:{format}}}{CurrencyConstants.LevaSuffix}",
             priceInStotinki / 100m);
     }
-
-    public string FormatCoinValue(byte value)
-    {
-        if (value >= 100)
-        {
-            return value % 100 == 0 ?
-                $"{value / 100}{CurrencyConstants.LevaSuffix}" :
-                $"{value / 100m:F2}{CurrencyConstants.LevaSuffix}";
-        }
-
-        return $"{value}{CurrencyConstants.StotinkiSuffix}";
-    }
 }
