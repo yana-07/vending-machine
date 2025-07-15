@@ -11,7 +11,10 @@ public class TablePrinter(
     {
         const int ColumnWidth = 25;
 
-        var properties = typeof(T).GetProperties();
+        var properties = typeof(T).GetProperties()
+            .Where(property => property
+                .GetCustomAttribute<SkipInTableAttribute>() is null)
+            .ToList();
 
         foreach (var property in properties)
         {
@@ -19,7 +22,7 @@ public class TablePrinter(
         }
 
         Console.WriteLine();
-        Console.WriteLine(new string('-', properties.Length * (ColumnWidth + 1)));
+        Console.WriteLine(new string('-', properties.Count * (ColumnWidth + 1)));
 
         foreach (var item in items)
         {
@@ -29,18 +32,12 @@ public class TablePrinter(
 
                 var isPriceAttribute = property
                     .GetCustomAttribute<PriceAttribute>();
-                var isCoinValuettribute = property
-                    .GetCustomAttribute<CoinValueAttribute>();
 
                 string? formatted = null;
 
                 if (isPriceAttribute is not null && value is int priceInStotinki)
                 {
                     formatted = currencyFormatter.FormatPrice(priceInStotinki);
-                }
-                else if (isCoinValuettribute is not null && value is byte coinValue)
-                {
-                    formatted = currencyFormatter.FormatCoinValue(coinValue);
                 }
 
                 Console.Write(

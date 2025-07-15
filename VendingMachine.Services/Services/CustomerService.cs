@@ -14,7 +14,6 @@ public class CustomerService(
     IChangeService changeService,
     ITablePrinter tablePrinter,
     IAnsiConsole ansiConsole,
-    ICurrencyFormatter currencyFormatter,
     ILogger<CustomerService> logger)
     : ICustomerService
 {
@@ -53,7 +52,7 @@ public class CustomerService(
         {
             if (coinRequestResult is null)
             {
-                coinRequestResult = RequestCoins(
+                coinRequestResult = await RequestCoins(
                     insertedCoins.Sum(coin => coin.Key * coin.Value));
 
                 foreach (var coin in coinRequestResult.InsertedCoins)
@@ -113,19 +112,17 @@ public class CustomerService(
         }   
     }
 
-    private CoinRequestResultDto RequestCoins(int alreadyInsertedAmount)
+    private async Task<CoinRequestResultDto> RequestCoins(int alreadyInsertedAmount)
     {
         var coinRequestResult = new CoinRequestResultDto();
 
-        var choices = CoinConstants.AllowedCoins.Select(coin => coin.ToString());
+        var coins = await coinService.GetAllAsNoTrackingAsync();
 
         while (true)
         {
             var selectionPrompt = new SelectionPrompt<string>()
                .Title("Insert a coin:")
-               .AddChoices(
-                    CoinConstants.AllowedCoins
-                    .Select(coin => currencyFormatter.FormatCoinValue(coin)));
+               .AddChoices(coins.Select(coin => coin.Denomination));
 
             if (alreadyInsertedAmount > 0 || coinRequestResult.InsertedCoins.Count > 0)
             {
@@ -177,13 +174,16 @@ public class CustomerService(
 
     private void ReturnInserted(Dictionary<byte, int> coins)
     {
+        var coinDtos = coins.Select(coin => 
+            new CoinDto { Value = coin.Key, Quantity = coin.Value });
+
         ansiConsole.MarkupLine("[blue]Returning inserted coins...[/]");
-        foreach (var (value, quantity) in coins)
+
+        foreach (var coinDto in coinDtos)
         {
-            for (int i = 0; i < quantity; i++)
+            for (int i = 0; i < coinDto.Quantity; i++)
             {
-                var formatted = currencyFormatter.FormatCoinValue(value);
-                ansiConsole.MarkupLine(formatted);
+                ansiConsole.MarkupLine(coinDto.Denomination);
             }
         }
     }

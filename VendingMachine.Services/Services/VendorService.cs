@@ -13,7 +13,6 @@ public class VendorService(
     IProductService productService,
     ICoinService coinService,
     ITablePrinter tablePrinter,
-    ICurrencyFormatter currencyFormatter,
     ILogger<VendorService> logger) :
     IVendorService
 {
@@ -30,7 +29,7 @@ public class VendorService(
                     break;
                 case VendorActions.View_Coins:
                     tablePrinter.Print(await coinService
-                        .GetAllDescendingAsNoTrackingAsync());
+                        .GetAllAsNoTrackingAsync());
                     break;
             }
 
@@ -308,9 +307,10 @@ public class VendorService(
 
     private async Task DepositCoinsAsync()
     {
+        var coins = await coinService.GetAllAsNoTrackingAsync();
+
         string[] choices = [
-            .. CoinConstants.AllowedCoins.Select(
-                coin => currencyFormatter.FormatCoinValue(coin)),
+            .. coins.Select(coin => coin.Denomination),
             nameof(VendorCommands.Back)];
 
         while (true)
@@ -356,9 +356,10 @@ public class VendorService(
 
     private async Task CollectCoinsAsync()
     {
+        var coins = await coinService.GetAllAsNoTrackingAsync();
+
         string[] choices = [
-            .. CoinConstants.AllowedCoins.Select(
-                coin => currencyFormatter.FormatCoinValue(coin)),
+            .. coins.Select(coin => coin.Denomination),
             nameof(VendorCommands.Back)];
 
         while (true)
