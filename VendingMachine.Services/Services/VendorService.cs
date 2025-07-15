@@ -91,21 +91,13 @@ public class VendorService(
                 .. products.Select(product => product.Code),
                 nameof(VendorCommand.Back)];
 
-            var selection = PromptSelection("Select product code:", choices);
+            var selection = PromptForSelection("Select product code:", choices);
 
             if (selection == nameof(VendorCommand.Back)) break;
 
             var product = products.First(product => product.Code == selection);
 
-            var quantity = ansiConsole.Prompt(
-                new TextPrompt<byte>($"Enter new quantity for " +
-                    $"\"{product.Name}\" with code {selection}:")
-                .Validate(input =>
-                    input >= ProductConstants.MinQuantity &&
-                    input <= ProductConstants.MaxQuantity)
-                .ValidationErrorMessage($"[red]Quantity must be a number between " +
-                    $"{ProductConstants.MinQuantity} and {ProductConstants.MaxQuantity}.[/]"));
-
+            var quantity = PromptForProductQuantity(product.Name, selection);
 
             if (IsActionConfirmed($"Are you sure you want to update " +
                 $"the quantity of \"{product.Name}\" with code {selection} to {quantity}?"))
@@ -125,8 +117,7 @@ public class VendorService(
                     when (ex is InvalidOperationException || 
                         ex is ProductNotFoundException)
                 {
-                    logger.LogError(ex, nameof(UpdateProductQuantityAsync));
-                    ansiConsole.MarkupLine($"[red]{ex.Message}[/]");
+                    LogError(ex, nameof(UpdateProductQuantityAsync));
                 }
             }
         }
@@ -142,28 +133,13 @@ public class VendorService(
                 .. products.Select(product => product.Code),
                 nameof(VendorCommand.Back)];
 
-            var selection = PromptSelection("Select product code:", choices);
+            var selection = PromptForSelection("Select product code:", choices);
 
             if (selection == nameof(VendorCommand.Back)) break;
 
             var product = products.First(product => product.Code == selection);
 
-            var price = ansiConsole.Prompt(
-                new TextPrompt<decimal>($"Enter new price (in leva) " +
-                    $"for \"{product.Name}\" with code {selection}:")
-                .Validate(input =>
-                {
-                    if (input < 0)
-                        return ValidationResult.Error(
-                            "[red]Price cannot be negative.[/]");
-
-                    if (input * 100 > int.MaxValue)
-                        return ValidationResult.Error(
-                            "[red]Price is too large.[/]");
-                     
-                    return ValidationResult.Success();
-                })
-                .ValidationErrorMessage("[red]Invalid price.[/]"));
+            var price = PromptForPrice(product.Name, selection);
 
             price = Math.Round(price, 2);
 
@@ -186,8 +162,7 @@ public class VendorService(
                     when (ex is InvalidOperationException ||
                         ex is ProductNotFoundException)
                 {
-                    logger.LogError(ex, nameof(UpdateProductPriceAsync));
-                    ansiConsole.MarkupLine($"[red]{ex.Message}[/]");
+                    LogError(ex, nameof(UpdateProductPriceAsync));
                 }
             }
         }
@@ -209,32 +184,11 @@ public class VendorService(
             var name = ansiConsole.Prompt(
                 new TextPrompt<string>("Enter product name:"));
 
-            var price = ansiConsole.Prompt(
-                new TextPrompt<decimal>("Enter price (in leva)")
-                .Validate(input =>
-                {
-                    if (input < 0)
-                        return ValidationResult.Error(
-                            "[red]Price cannot be negative.[/]");
-
-                    if (input * 100 > int.MaxValue)
-                        return ValidationResult.Error(
-                            "[red]Price is too large.[/]");
-
-                    return ValidationResult.Success();
-                })
-                .ValidationErrorMessage("[red]Invalid price.[/]"));
+            var price = PromptForPrice();
 
             price = Math.Round(price, 2);
 
-            var quantity = ansiConsole.Prompt(
-                new TextPrompt<byte>("Enter product quantity:")
-                .ValidationErrorMessage("[red]Invalid quantity.[/]")
-                .Validate(input =>
-                    input >= ProductConstants.MinQuantity &&
-                    input <= ProductConstants.MaxQuantity)
-                .ValidationErrorMessage($"[red]Quantity must be a number between " +
-                    $"{ProductConstants.MinQuantity} and {ProductConstants.MaxQuantity}.[/]"));
+            var quantity = PromptForProductQuantity();
 
             if (IsActionConfirmed(
                 $"Code: {code}{Environment.NewLine}" +
@@ -266,7 +220,7 @@ public class VendorService(
                 "Add new product",
                 nameof(VendorCommand.Back)];
 
-            var nextAction = PromptSelection("What would you like to do next?", choices);
+            var nextAction = PromptForSelection("What would you like to do next?", choices);
 
             if (nextAction == nameof(VendorCommand.Back)) break;
         }
@@ -282,7 +236,7 @@ public class VendorService(
                 .. products.Select(product => product.Code),
                 nameof(VendorCommand.Back)];
 
-            var selection = PromptSelection("Select product code:", choices);
+            var selection = PromptForSelection("Select product code:", choices);
 
             if (selection == nameof(VendorCommand.Back)) break;
 
@@ -315,7 +269,7 @@ public class VendorService(
 
         while (true)
         {
-            var selection = PromptSelection("Deposit coin:", choices);
+            var selection = PromptForSelection("Deposit coin:", choices);
 
             if (selection == nameof(VendorCommand.Back)) break;
 
@@ -323,10 +277,7 @@ public class VendorService(
 
             if (CoinConstants.AllowedCoins.Contains(coinValue))
             {
-                var quantity = ansiConsole.Prompt(
-                    new TextPrompt<int>("Enter coin quantity:")
-                    .Validate(input => input > 0,
-                        "[red]Quantity must be greater than 0.[/]"));
+                var quantity = PromptForCoinQuantity();
 
                 if (IsActionConfirmed($"Are you sure you want " +
                     $"to deposit {quantity}x{selection}?"))
@@ -364,7 +315,7 @@ public class VendorService(
 
         while (true)
         {
-            var selection = PromptSelection("Collect coins:", choices);
+            var selection = PromptForSelection("Collect coins:", choices);
 
             if (selection == nameof(VendorCommand.Back)) break;
 
@@ -372,10 +323,7 @@ public class VendorService(
 
             if (CoinConstants.AllowedCoins.Contains(coinValue))
             {
-                var quantity = ansiConsole.Prompt(
-                    new TextPrompt<int>("Enter coin quantity:")
-                    .Validate(input => input > 0,
-                        "[red]Quantity must be greater than 0.[/]"));
+                var quantity = PromptForCoinQuantity();
 
                 if (IsActionConfirmed($"Are you sure you want " +
                     $"to collect {quantity}x{selection}?"))
@@ -403,13 +351,71 @@ public class VendorService(
         }
     }
 
-    private string PromptSelection(
+    private string PromptForSelection(
         string title, IEnumerable<string> choices)
     {
         return ansiConsole.Prompt(
             new SelectionPrompt<string>()
                 .Title(title)
                 .AddChoices(choices));
+    }
+
+    private byte PromptForProductQuantity(
+    string? productName = null, string? productCode = null)
+    {
+        string productDescription = string.Empty;
+
+        if (!string.IsNullOrEmpty(productName) &&
+            !string.IsNullOrEmpty(productCode))
+        {
+            productDescription = $" for \"{productName}\" " +
+                $"with code {productCode}";
+        }
+
+        return ansiConsole.Prompt(
+            new TextPrompt<byte>($"Enter new quantity{productDescription}:")
+            .Validate(input =>
+                input >= ProductConstants.MinQuantity &&
+                input <= ProductConstants.MaxQuantity)
+            .ValidationErrorMessage($"[red]Quantity must be a number between " +
+                $"{ProductConstants.MinQuantity} and {ProductConstants.MaxQuantity}.[/]"));
+    }
+
+    private decimal PromptForPrice(
+        string? productName = null, string? productCode = null)
+    {
+        string productDescription = string.Empty;
+
+        if (!string.IsNullOrEmpty(productName) &&
+            !string.IsNullOrEmpty(productCode))
+        {
+            productDescription = $" for \"{productName}\" " +
+                $"with code {productCode}";
+        }
+
+        return ansiConsole.Prompt(
+            new TextPrompt<decimal>($"Enter new price (in leva){productDescription}:")
+            .Validate(input =>
+            {
+                if (input < 0)
+                    return ValidationResult.Error(
+                        "[red]Price cannot be negative.[/]");
+
+                if (input * 100 > int.MaxValue)
+                    return ValidationResult.Error(
+                        "[red]Price is too large.[/]");
+
+                return ValidationResult.Success();
+            })
+            .ValidationErrorMessage("[red]Invalid price.[/]"));
+    }
+
+    private int PromptForCoinQuantity()
+    {
+        return ansiConsole.Prompt(
+            new TextPrompt<int>("Enter coin quantity:")
+            .Validate(input => input > 0,
+                "[red]Quantity must be greater than 0.[/]"));
     }
 
     private bool IsActionConfirmed(string message)
@@ -419,5 +425,11 @@ public class VendorService(
                 .AddChoice(true)
                 .AddChoice(false)
                 .WithConverter(choice => choice ? "y" : "n"));
+    }
+
+    private void LogError(Exception ex, string methodName)
+    {
+        logger.LogError(ex, methodName);
+        ansiConsole.MarkupLine($"[red]{ex.Message}[/]");
     }
 }
