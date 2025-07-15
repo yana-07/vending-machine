@@ -106,7 +106,7 @@ namespace VendingMachine.Tests
 
                     Assert.That(actual.Code, Is.EqualTo(expected.Code));
                     Assert.That(actual.Name, Is.EqualTo(expected.Name));
-                    Assert.That(actual.Price, Is.EqualTo(expected.PriceInStotinki));
+                    Assert.That(actual.PriceInStotinki, Is.EqualTo(expected.PriceInStotinki));
                     Assert.That(actual.Quantity, Is.EqualTo(expected.Quantity));
                 }
             });
@@ -342,7 +342,7 @@ namespace VendingMachine.Tests
             {
                 Code = code,
                 Name = "Test",
-                Price = 50,
+                PriceInStotinki = 50,
                 Quantity = 8
             };
 
@@ -369,7 +369,7 @@ namespace VendingMachine.Tests
             {
                 Code = "A1",
                 Name = "Test",
-                Price = 50,
+                PriceInStotinki = 50,
                 Quantity = quantity
             };
 
@@ -395,7 +395,7 @@ namespace VendingMachine.Tests
             {
                 Code = "A1",
                 Name = "Test",
-                Price = price,
+                PriceInStotinki = price,
                 Quantity = 7
             };
 
@@ -422,7 +422,7 @@ namespace VendingMachine.Tests
             {
                 Code = code,
                 Name = name,
-                Price = price,
+                PriceInStotinki = price,
                 Quantity = quantity
             };
 

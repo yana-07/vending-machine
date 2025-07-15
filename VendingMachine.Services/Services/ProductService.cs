@@ -25,7 +25,7 @@ public class ProductService(
             {
                 Name = product.Name,
                 Code = product.Code,
-                Price = product.PriceInStotinki,
+                PriceInStotinki = product.PriceInStotinki,
                 Quantity = product.Quantity
             })
             .ToListAsync();
@@ -111,7 +111,7 @@ public class ProductService(
                 $"Product quantity cannot be less than {ProductConstants.MinQuantity}.");
         }
 
-        if (product.Price < 0)
+        if (product.PriceInStotinki < 0)
         {
             throw new InvalidOperationException("Product price cannot be negative.");
         }
@@ -122,7 +122,7 @@ public class ProductService(
                 Code = product.Code,
                 Name = product.Name,
                 Quantity = product.Quantity,
-                PriceInStotinki = product.Price
+                PriceInStotinki = product.PriceInStotinki
             });
 
         await repository.SaveChangesAsync();

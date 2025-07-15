@@ -249,7 +249,7 @@ public class VendorService(
                     {
                         Code = code,
                         Name = name,
-                        Price = (int)(price * 100),
+                        PriceInStotinki = (int)(price * 100),
                         Quantity = quantity
                     });
 

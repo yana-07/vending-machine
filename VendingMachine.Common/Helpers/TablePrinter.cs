@@ -3,9 +3,7 @@ using VendingMachine.Common.Attributes;
 
 namespace VendingMachine.Common.Helpers;
 
-public class TablePrinter(
-    ICurrencyFormatter currencyFormatter) : 
-    ITablePrinter
+public class TablePrinter : ITablePrinter
 {
     public void Print<T>(IEnumerable<T> items)
     {
@@ -30,19 +28,9 @@ public class TablePrinter(
             {
                 var value = property.GetValue(item);
 
-                var isPriceAttribute = property
-                    .GetCustomAttribute<PriceAttribute>();
-
-                string? formatted = null;
-
-                if (isPriceAttribute is not null && value is int priceInStotinki)
-                {
-                    formatted = currencyFormatter.FormatPrice(priceInStotinki);
-                }
-
                 Console.Write(
                     $"{{0,-{ColumnWidth}}}|",
-                    formatted ?? value);
+                    value);
             }
 
             Console.WriteLine();

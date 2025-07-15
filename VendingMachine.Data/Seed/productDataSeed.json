@@ -1,91 +1,91 @@
 ﻿[
   {
     "name": "Water (500ml)",
-    "price": 100,
+    "priceInStotinki": 100,
     "quantity": 1,
     "code": "01"
   },
   {
     "name": "Cola (330ml)",
-    "price": 150,
+    "priceInStotinki": 150,
     "quantity": 4,
     "code": "02"
   },
   {
     "name": "Fanta (330ml)",
-    "price": 150,
+    "priceInStotinki": 150,
     "quantity": 2,
     "code": "03"
   },
   {
     "name": "Ice Tea (peach)",
-    "price": 180,
+    "priceInStotinki": 180,
     "quantity": 7,
     "code": "04"
   },
   {
     "name": "Energy Drink",
-    "price": 200,
+    "priceInStotinki": 200,
     "quantity": 8,
     "code": "05"
   },
   {
     "name": "Snickers Bar",
-    "price": 120,
+    "priceInStotinki": 120,
     "quantity": 9,
     "code": "06"
   },
   {
     "name": "KitKat",
-    "price": 120,
+    "priceInStotinki": 120,
     "quantity": 3,
     "code": "07"
   },
   {
     "name": "Twix",
-    "price": 130,
+    "priceInStotinki": 130,
     "quantity": 4,
     "code": "08"
   },
   {
     "name": "M&M’s (small pack)",
-    "price": 140,
+    "priceInStotinki": 140,
     "quantity": 5,
     "code": "09"
   },
   {
     "name": "Kinder Bueno",
-    "price": 150,
+    "priceInStotinki": 150,
     "quantity": 6,
     "code": "10"
   },
   {
     "name": "Croissant (choco)",
-    "price": 100,
+    "priceInStotinki": 100,
     "quantity": 7,
     "code": "11"
   },
   {
     "name": "Sandwich (ham & cheese)",
-    "price": 250,
+    "priceInStotinki": 250,
     "quantity": 5,
     "code": "12"
   },
   {
     "name": "Salty Sticks",
-    "price": 90,
+    "priceInStotinki": 90,
     "quantity": 6,
     "code": "13"
   },
   {
     "name": "Potato Chips (small)",
-    "price": 160,
+    "priceInStotinki": 160,
     "quantity": 10,
     "code": "14"
   },
   {
     "name": "Popcorn (microwave)",
-    "price": 180,
+    "priceInStotinki": 180,
     "quantity": 10,
     "code": "15"
   }

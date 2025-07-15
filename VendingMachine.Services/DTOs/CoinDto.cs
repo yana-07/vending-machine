@@ -1,4 +1,5 @@
 ﻿using VendingMachine.Common.Attributes;
+using VendingMachine.Common.Constants;
 
 namespace VendingMachine.Services.DTOs;
 
@@ -11,6 +12,6 @@ public class CoinDto
 
     public string Denomination =>
         Value < 100 ?
-        $"{Value}st" :
-        $"{Value / 100}lv";
+        $"{Value}{CurrencyConstants.StotinkiSuffix}" :
+        $"{Value / 100}{CurrencyConstants.LevaSuffix}";
 }

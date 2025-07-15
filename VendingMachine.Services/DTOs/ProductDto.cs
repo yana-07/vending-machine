@@ -1,4 +1,5 @@
 ﻿using VendingMachine.Common.Attributes;
+using VendingMachine.Common.Constants;
 
 namespace VendingMachine.Services.DTOs;
 
@@ -8,8 +9,11 @@ public class ProductDto
 
     public required string Name { get; init; }
 
-    [Price]
-    public required int Price { get; init; }
+    [SkipInTable]
+    public required int PriceInStotinki { get; init; }
 
     public required byte Quantity { get; init; }
+
+    public string Price => 
+        $"{PriceInStotinki / 100m:F2}{CurrencyConstants.LevaSuffix}";
 }

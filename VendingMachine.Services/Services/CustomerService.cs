@@ -37,7 +37,7 @@ public class CustomerService(
                 {
                     Name = product.Name,
                     Code = product.Code,
-                    Price = product.Price,
+                    PriceInStotinki = product.PriceInStotinki,
                     Quantity = product.Quantity,
                 }));
     }
