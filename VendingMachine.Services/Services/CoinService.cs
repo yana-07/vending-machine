@@ -87,6 +87,17 @@ public class CoinService(
             .ToListAsync();
     }
 
+    public async Task<IEnumerable<CoinDto>> GetAllAsNoTrackingAsync()
+    {
+        return await repository.AllAsNoTracking()
+            .Select(coin => new CoinDto
+            {
+                Value = coin.Value,
+                Quantity = coin.Quantity
+            })
+            .ToListAsync();
+    }
+
     public byte ParseCoinValue(string value)
     {
         string valueWithoutCurrency = value

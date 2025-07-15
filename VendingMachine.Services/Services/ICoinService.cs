@@ -14,5 +14,7 @@ public interface ICoinService
 
     Task<IEnumerable<CoinDto>> GetAllDescendingAsNoTrackingAsync();
 
+    Task<IEnumerable<CoinDto>> GetAllAsNoTrackingAsync();
+
     byte ParseCoinValue(string value);
 }
