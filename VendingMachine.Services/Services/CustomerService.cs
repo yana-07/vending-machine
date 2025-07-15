@@ -269,16 +269,16 @@ public class CustomerService(
             };
         }
 
-        if (product.Price <= coinsValuesSum)
+        if (product.PriceInStotinki <= coinsValuesSum)
         {
             return new SellProductDto
             {
                 IsSuccess = true,
-                ChangeToReturn = coinsValuesSum - product.Price
+                ChangeToReturn = coinsValuesSum - product.PriceInStotinki
             };
         }
 
-        int remainingToInsert = product.Price - coinsValuesSum;
+        int remainingToInsert = product.PriceInStotinki - coinsValuesSum;
 
         return new SellProductDto
         {

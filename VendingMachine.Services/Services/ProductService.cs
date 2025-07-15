@@ -25,7 +25,7 @@ public class ProductService(
             {
                 Name = product.Name,
                 Code = product.Code,
-                Price = product.Price,
+                Price = product.PriceInStotinki,
                 Quantity = product.Quantity
             })
             .ToListAsync();
@@ -122,7 +122,7 @@ public class ProductService(
                 Code = product.Code,
                 Name = product.Name,
                 Quantity = product.Quantity,
-                Price = product.Price
+                PriceInStotinki = product.Price
             });
 
         await repository.SaveChangesAsync();
@@ -136,7 +136,7 @@ public class ProductService(
         }
 
         var existingProduct = await GetByCodeAsync(product.Code);
-        existingProduct.Price = product.Price;
+        existingProduct.PriceInStotinki = product.Price;
         await repository.SaveChangesAsync();
     }
 

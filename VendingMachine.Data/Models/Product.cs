@@ -11,7 +11,7 @@ public class Product
 
     public required string Name { get; set; }
 
-    public int Price { get; set; }
+    public int PriceInStotinki { get; set; }
 
     public byte Quantity { get; set; }
 }

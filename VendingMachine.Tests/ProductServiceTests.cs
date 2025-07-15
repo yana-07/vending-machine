@@ -34,7 +34,7 @@ namespace VendingMachine.Tests
                 Id = id,
                 Code = code,
                 Name = name,
-                Price = price,
+                PriceInStotinki = price,
                 Quantity = quantity
             };
 
@@ -50,7 +50,7 @@ namespace VendingMachine.Tests
                 Assert.That(actualProduct.Id, Is.EqualTo(expectedProduct.Id));
                 Assert.That(actualProduct.Code, Is.EqualTo(expectedProduct.Code));
                 Assert.That(actualProduct.Name, Is.EqualTo(expectedProduct.Name));
-                Assert.That(actualProduct.Price, Is.EqualTo(expectedProduct.Price));
+                Assert.That(actualProduct.PriceInStotinki, Is.EqualTo(expectedProduct.PriceInStotinki));
                 Assert.That(actualProduct.Quantity, Is.EqualTo(expectedProduct.Quantity));
             });
         }
@@ -63,7 +63,7 @@ namespace VendingMachine.Tests
                 Id = 1,
                 Code = "C4",
                 Name = "Some Name",
-                Price = 120,
+                PriceInStotinki = 120,
                 Quantity = 8
             };
 
@@ -84,9 +84,9 @@ namespace VendingMachine.Tests
         public async Task GetAllAsNoTrackingAsync_ShallReturnCorrectCollection()
         {
             Product[] expectedProducts = [
-                new Product { Id = 1, Code = "01", Name = "Some Name", Price = 199, Quantity = 1 },
-                new Product { Id = 8, Code = "03", Name = "Test", Price = 170, Quantity = 10 },
-                new Product { Id = 12, Code = "05", Name = "Name", Price = 100, Quantity = 7 }];
+                new Product { Id = 1, Code = "01", Name = "Some Name", PriceInStotinki = 199, Quantity = 1 },
+                new Product { Id = 8, Code = "03", Name = "Test", PriceInStotinki = 170, Quantity = 10 },
+                new Product { Id = 12, Code = "05", Name = "Name", PriceInStotinki = 100, Quantity = 7 }];
 
             var asyncMock = expectedProducts.AsQueryable().BuildMock();
 
@@ -106,7 +106,7 @@ namespace VendingMachine.Tests
 
                     Assert.That(actual.Code, Is.EqualTo(expected.Code));
                     Assert.That(actual.Name, Is.EqualTo(expected.Name));
-                    Assert.That(actual.Price, Is.EqualTo(expected.Price));
+                    Assert.That(actual.Price, Is.EqualTo(expected.PriceInStotinki));
                     Assert.That(actual.Quantity, Is.EqualTo(expected.Quantity));
                 }
             });
@@ -116,9 +116,9 @@ namespace VendingMachine.Tests
         public async Task GetAllCodesAsync_ShallReturnCorrectStringCollection()
         {
             Product[] expectedProducts = [
-                new Product { Id = 1, Code = "A1", Name = "Lorem", Price = 100, Quantity = 6 },
-                new Product { Id = 8, Code = "B4", Name = "Ipsum", Price = 200, Quantity = 4 },
-                new Product { Id = 12, Code = "T1", Name = "Dolor", Price = 300, Quantity = 7 }];
+                new Product { Id = 1, Code = "A1", Name = "Lorem", PriceInStotinki = 100, Quantity = 6 },
+                new Product { Id = 8, Code = "B4", Name = "Ipsum", PriceInStotinki = 200, Quantity = 4 },
+                new Product { Id = 12, Code = "T1", Name = "Dolor", PriceInStotinki = 300, Quantity = 7 }];
 
             var asyncMock = expectedProducts.AsQueryable().BuildMock();
 
@@ -143,7 +143,7 @@ namespace VendingMachine.Tests
                 Id = id,
                 Code = code,
                 Name = name,
-                Price = price,
+                PriceInStotinki = price,
                 Quantity = quantity
             };
 
@@ -168,7 +168,7 @@ namespace VendingMachine.Tests
                 Id = id,
                 Code = code,
                 Name = name,
-                Price = price,
+                PriceInStotinki = price,
                 Quantity = quantity
             };
 
@@ -195,7 +195,7 @@ namespace VendingMachine.Tests
                 Id = id,
                 Code = code,
                 Name = name,
-                Price = price,
+                PriceInStotinki = price,
                 Quantity = quantity
             };
 
@@ -222,7 +222,7 @@ namespace VendingMachine.Tests
                 Id = 1,
                 Code = code,
                 Name = "Name",
-                Price = 120,
+                PriceInStotinki = 120,
                 Quantity = 5
             };
 
@@ -253,7 +253,7 @@ namespace VendingMachine.Tests
                 Id = 2,
                 Code = "B56",
                 Name = "Some Name",
-                Price = 140,
+                PriceInStotinki = 140,
                 Quantity = 2
             };
 
@@ -288,7 +288,7 @@ namespace VendingMachine.Tests
                 Id = id,
                 Code = code,
                 Name = name,
-                Price = price,
+                PriceInStotinki = price,
                 Quantity = quantity
             };
 
@@ -329,7 +329,7 @@ namespace VendingMachine.Tests
                 Id = 3,
                 Code = code,
                 Name = "Lorem Impsum",
-                Price = 75,
+                PriceInStotinki = 75,
                 Quantity = 5
             };
 
@@ -443,7 +443,7 @@ namespace VendingMachine.Tests
                 Id = 1,
                 Code = code,
                 Name = "Name",
-                Price = 120,
+                PriceInStotinki = 120,
                 Quantity = 5
             };
 
@@ -460,7 +460,7 @@ namespace VendingMachine.Tests
 
             await _cut.UpdatePriceAsync(priceUpdateDto);
 
-            Assert.That(product.Price, Is.EqualTo(priceUpdateDto.Price));
+            Assert.That(product.PriceInStotinki, Is.EqualTo(priceUpdateDto.Price));
         }
 
         [TestCase("02", -1)]
@@ -474,7 +474,7 @@ namespace VendingMachine.Tests
                 Id = 1,
                 Code = code,
                 Name = "Name",
-                Price = 120,
+                PriceInStotinki = 120,
                 Quantity = 5
             };
 
@@ -501,9 +501,9 @@ namespace VendingMachine.Tests
         public async Task CanAddAsync_ShallReturnTrue_WhenProductCountIsLessThanSlotLimit()
         {
             Product[] expectedProducts = [
-                new Product { Id = 1, Code = "01", Name = "Some Name", Price = 199, Quantity = 1 },
-                new Product { Id = 8, Code = "03", Name = "Test", Price = 170, Quantity = 10 },
-                new Product { Id = 12, Code = "05", Name = "Name", Price = 100, Quantity = 7 }];
+                new Product { Id = 1, Code = "01", Name = "Some Name", PriceInStotinki = 199, Quantity = 1 },
+                new Product { Id = 8, Code = "03", Name = "Test", PriceInStotinki = 170, Quantity = 10 },
+                new Product { Id = 12, Code = "05", Name = "Name", PriceInStotinki = 100, Quantity = 7 }];
 
             var asyncMock = expectedProducts.AsQueryable().BuildMock();
 
@@ -527,7 +527,7 @@ namespace VendingMachine.Tests
                         Id = i, 
                         Code = $"A{i}", 
                         Name = $"Name{i}", 
-                        Price = 100 + i, 
+                        PriceInStotinki = 100 + i, 
                         Quantity = 7 
                     });
             }
