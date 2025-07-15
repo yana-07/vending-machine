@@ -1,6 +1,6 @@
 # Vending Machine Console Application
 
-A console-based vending machine built with C# and .NET 9. The application allows users to view products, insert coins, make purchases, and receive change.
+A console-based interactive vending machine application built with C# and .NET 9.
 
 ---
 
@@ -23,6 +23,17 @@ A console-based vending machine built with C# and .NET 9. The application allows
 
 ---
 
+## Technologies and Tools
+- **.NET 9**, **C# 12**
+- **Entity Framework Core**
+- **SQLite**
+- **Spectre.Console**
+- **NUnit**
+- **Moq**
+- **Serilog**
+
+---
+
 ## Prerequisites
 
 Before you can build and run the project, ensure the following are installed:
@@ -36,11 +47,11 @@ Before you can build and run the project, ensure the following are installed:
 ## Project Structure
 
 VendingMachine
-- `VendingMachine.ConsoleApp/` # Main console UI application
-- `VendingMachine.Services/` # Business logic and services
-- `VendingMachine.Data/` # Repositories and database context
-- `VendingMachine.Common/` # Shared components: exceptions, attributes, helpers, etc.
-- `VendingMachine.Tests/` # Unit tests
+- `VendingMachine.ConsoleApp/` Main console UI application
+- `VendingMachine.Services/` Business logic and services
+- `VendingMachine.Data/` Repositories and database context
+- `VendingMachine.Common/` Shared components: exceptions, attributes, helpers, etc.
+- `VendingMachine.Tests/` Unit tests
 
 ---
 
