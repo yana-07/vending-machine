@@ -46,31 +46,22 @@ public class CustomerService(
     {
         ProductRequestResultDto? productRequestResult = null;
         CoinRequestResultDto? coinRequestResult = null;
-        Dictionary<byte, int> insertedCoins = [];
+        Dictionary<byte, int> totalInsertedCoins = [];
 
         while (true)
         {
             if (coinRequestResult is null)
             {
-                coinRequestResult = await RequestCoins(
-                    insertedCoins.Sum(coin => coin.Key * coin.Value));
+                var totalInsertedAmount = totalInsertedCoins.Sum(coin => coin.Key * coin.Value);
 
-                foreach (var coin in coinRequestResult.InsertedCoins)
-                {
-                    if (insertedCoins.TryGetValue(coin.Key, out int _))
-                    {
-                        insertedCoins[coin.Key] += coin.Value;
-                    }
-                    else
-                    {
-                        insertedCoins.Add(coin.Key, coin.Value);
-                    }
-                }
+                coinRequestResult = await RequestCoins(totalInsertedAmount);
+
+                UpdateTotalInsertedCoins(coinRequestResult.InsertedCoins, totalInsertedCoins);               
 
                 if (coinRequestResult.IsCancelled)
                 {
-                    if (insertedCoins.Count > 0) 
-                        ReturnInserted(insertedCoins);
+                    if (totalInsertedCoins.Count > 0) 
+                        ReturnInserted(totalInsertedCoins);
                     break;
                 }
             }
@@ -80,14 +71,14 @@ public class CustomerService(
                 productRequestResult = await RequestProductAsync();
                 if (productRequestResult.IsCancelled)
                 {
-                    ReturnInserted(insertedCoins);
+                    ReturnInserted(totalInsertedCoins);
                     break;
                 }
             }
 
             try
             {
-                if (await TryProcessPurchase(productRequestResult.ProductCode, insertedCoins))
+                if (await TryCompletePurchase(productRequestResult.ProductCode, totalInsertedCoins))
                     break;
             }
             catch (Exception ex) 
@@ -105,14 +96,15 @@ public class CustomerService(
             coinRequestResult = null;
         }
 
-        if (insertedCoins.Count > 0)
+        if (totalInsertedCoins.Count > 0)
         {
             ansiConsole.MarkupLine("Press any key to continue.");
             Console.ReadKey();
         }   
     }
 
-    private async Task<CoinRequestResultDto> RequestCoins(int alreadyInsertedAmount)
+    private async Task<CoinRequestResultDto> RequestCoins(
+        int alreadyInsertedAmount)
     {
         var coinRequestResult = new CoinRequestResultDto();
 
@@ -120,27 +112,14 @@ public class CustomerService(
 
         while (true)
         {
-            var selectionPrompt = new SelectionPrompt<string>()
-               .Title("Insert a coin:")
-               .AddChoices(coins.Select(coin => coin.Denomination));
+            var selection = PromptForCoin(
+                coins.Select(coin => coin.Denomination),
+                alreadyInsertedAmount,
+                coinRequestResult.InsertedCoins.Count);
 
-            if (alreadyInsertedAmount > 0 || coinRequestResult.InsertedCoins.Count > 0)
-            {
-                selectionPrompt.AddChoice(nameof(CustomerCommand.Continue));
-            }
+            UpdateCoinRequestResultIfSpecialCommandSelected(selection, coinRequestResult);
 
-            selectionPrompt.AddChoice(nameof(CustomerCommand.Cancel));
-
-            var selection = ansiConsole.Prompt(selectionPrompt);
-
-            if (selection == nameof(CustomerCommand.Cancel))
-            {
-                coinRequestResult.IsCancelled = true;
-
-                return coinRequestResult;
-            }
-
-            if (selection == nameof(CustomerCommand.Continue))
+            if (coinRequestResult.IsCancelled || coinRequestResult.IsFinished)
             {
                 return coinRequestResult;
             }
@@ -150,24 +129,84 @@ public class CustomerService(
             if (CoinConstants.AllowedCoins.Contains(coinValue))
             {
                 coinRequestResult.IsValid = true;
-                if (coinRequestResult.InsertedCoins.TryGetValue(coinValue, out int _))
-                {
-                    coinRequestResult.InsertedCoins[coinValue]++;
-                }
-                else
-                {
-                    coinRequestResult.InsertedCoins.Add(coinValue, 1);
-                }
-               
-                var justInsertedAmount = coinRequestResult
-                    .InsertedCoins
-                    .Sum(coin => coin.Key * coin.Value);
-                var totalInsertedAmount = justInsertedAmount + alreadyInsertedAmount;
+                UpdateCurrentlyInsertedCoins(coinRequestResult, coinValue);
+            }
 
-                ansiConsole.MarkupLine(
-                    "[green]Total inserted: " +
-                    $"{totalInsertedAmount / 100m:F2}" +
-                    $"{CurrencyConstants.LevaSuffix}[/]");
+            var totalInserted = 
+                alreadyInsertedAmount + 
+                coinRequestResult.InsertedCoins
+                    .Sum(coin => coin.Key * coin.Value);
+
+            DisplayTotalInserted(totalInserted);
+        }
+    }
+
+    private string PromptForCoin(
+        IEnumerable<string> coinChoices, 
+        int totalInsertedAmount, int insertedCoinsCount)
+    {
+        var selectionPrompt = new SelectionPrompt<string>()
+           .Title("Insert a coin:")
+           .AddChoices(coinChoices);
+
+        if (totalInsertedAmount > 0 || insertedCoinsCount > 0)
+        {
+            selectionPrompt.AddChoice(nameof(CustomerCommand.Continue));
+        }
+
+        selectionPrompt.AddChoice(nameof(CustomerCommand.Cancel));
+
+        return ansiConsole.Prompt(selectionPrompt);
+    }
+
+    private static void UpdateCoinRequestResultIfSpecialCommandSelected(
+        string selection, CoinRequestResultDto coinRequestResult)
+    {
+        if (selection == nameof(CustomerCommand.Cancel))
+        {
+            coinRequestResult.IsCancelled = true;
+        }
+
+        if (selection == nameof(CustomerCommand.Continue))
+        {
+            coinRequestResult.IsFinished = true;
+        }
+    }
+
+    private static void UpdateCurrentlyInsertedCoins(
+        CoinRequestResultDto coinRequestResult, byte coinValue)
+    {
+        if (coinRequestResult.InsertedCoins.TryGetValue(coinValue, out int _))
+        {
+            coinRequestResult.InsertedCoins[coinValue]++;
+        }
+        else
+        {
+            coinRequestResult.InsertedCoins.Add(coinValue, 1);
+        }
+    }
+
+    public void DisplayTotalInserted(int amount)
+    {
+        ansiConsole.MarkupLine(
+            "[green]Total inserted: " +
+            $"{amount / 100m:F2}" +
+            $"{CurrencyConstants.LevaSuffix}[/]");
+    }
+
+    private static void UpdateTotalInsertedCoins(
+        Dictionary<byte, int> currentlyInserted,
+        Dictionary<byte, int> totalInserted)
+    {
+        foreach (var coin in currentlyInserted)
+        {
+            if (totalInserted.TryGetValue(coin.Key, out int _))
+            {
+                totalInserted[coin.Key] += coin.Value;
+            }
+            else
+            {
+                totalInserted.Add(coin.Key, coin.Value);
             }
         }
     }
@@ -208,54 +247,37 @@ public class CustomerService(
         };
     }
 
-    private async Task<bool> TryProcessPurchase(
+    private async Task<bool> TryCompletePurchase(
         string productCode, Dictionary<byte, int> insertedCoins)
     {
-        SellProductDto sellProductResult = await TrySellProductAsync(
-            productCode, insertedCoins.Sum(coin => coin.Key * coin.Value));
+        int insertedAmount = insertedCoins
+            .Sum(coin => coin.Key * coin.Value);
 
-        if (sellProductResult.IsSuccess &&
-            sellProductResult.RemainingToInsert == 0)
+        var sellProductResult = await TrySellProductAsync(productCode, insertedAmount);
+
+        if (!sellProductResult.IsSuccess || sellProductResult.RemainingToInsert > 0)
         {
-            await productService.DecreaseInventoryAsync(productCode);
+            DisplaySaleError(sellProductResult.ErrorMessage);
 
-            var product = await productService.GetByCodeAsync(productCode);
-
-            ansiConsole.MarkupLine($"[green]Dispensing \"{product.Name}\"...[/]");
-
-            var changeResult = await changeService.GenerateChange(
-                insertedCoins, sellProductResult.ChangeToReturn);
-
-            if (changeResult.RemainingChange > 0)
-            {
-                ansiConsole.MarkupLine(
-                    "[yellow]The following amount could not be returned: " +
-                    $"{changeResult.RemainingChange / 100m:F2}" +
-                    $"{CurrencyConstants.LevaSuffix}.[/]");
-            }
-
-            if (changeResult.ReturnedCoins.Count > 0)
-            {
-                ReturnInserted(changeResult.ReturnedCoins);              
-            }
-            else
-            {
-                ansiConsole.MarkupLine("[yellow]No change to return.[/]");
-            }
-
-            return true;
-        }
-        else
-        {
-            ansiConsole.MarkupLine($"[red]{sellProductResult.ErrorMessage ?? 
-                "Impossible to sell product."}[/]");
+            return false;
         }
 
-        return false;
+        await productService.DecreaseInventoryAsync(productCode);
+
+        var product = await productService.GetByCodeAsync(productCode);
+
+        DisplaySaleSuccess(product.Name);
+
+        var changeResult = await changeService.GenerateChange(
+            insertedCoins, sellProductResult.ChangeToReturn);
+
+        HandleChangeResult(changeResult);
+
+        return true;
     }
 
     private async Task<SellProductDto> TrySellProductAsync(
-        string code, int coinsValuesSum)
+       string code, int insertedAmount)
     {
         var product = await productService.GetByCodeAsync(code);
 
@@ -265,20 +287,20 @@ public class CustomerService(
             {
                 IsSuccess = false,
                 ErrorMessage = $"Product \"{product.Name}\" with code {code} " +
-                $"is out of stock. Please select another one or contact the vendor."
+                    $"is out of stock. Please select another one or contact the vendor."
             };
         }
 
-        if (product.PriceInStotinki <= coinsValuesSum)
+        if (product.PriceInStotinki <= insertedAmount)
         {
             return new SellProductDto
             {
                 IsSuccess = true,
-                ChangeToReturn = coinsValuesSum - product.PriceInStotinki
+                ChangeToReturn = insertedAmount - product.PriceInStotinki
             };
         }
 
-        int remainingToInsert = product.PriceInStotinki - coinsValuesSum;
+        int remainingToInsert = product.PriceInStotinki - insertedAmount;
 
         return new SellProductDto
         {
@@ -288,5 +310,36 @@ public class CustomerService(
                 $"{remainingToInsert / 100m:F2}" +
                 $"{CurrencyConstants.LevaSuffix} more to continue.[/]"
         };
+    }
+
+    private void DisplaySaleError(string? saleErrorMessage)
+    {
+        ansiConsole.MarkupLine($"[red]{saleErrorMessage ??
+            "Impossible to sell product."}[/]");
+    }
+
+    private void DisplaySaleSuccess(string productName)
+    {
+        ansiConsole.MarkupLine($"[green]Dispensing \"{productName}\"...[/]");
+    }
+
+    private void HandleChangeResult(ChangeDto changeResult)
+    {
+        if (changeResult.RemainingChange > 0)
+        {
+            ansiConsole.MarkupLine(
+                "[yellow]The following amount could not be returned: " +
+                $"{changeResult.RemainingChange / 100m:F2}" +
+                $"{CurrencyConstants.LevaSuffix}.[/]");
+        }
+
+        if (changeResult.ReturnedCoins.Count > 0)
+        {
+            ReturnInserted(changeResult.ReturnedCoins);
+        }
+        else
+        {
+            ansiConsole.MarkupLine("[yellow]No change to return.[/]");
+        }
     }
 }
