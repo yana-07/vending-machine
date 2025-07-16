@@ -78,12 +78,23 @@ public class CustomerService(
 
             try
             {
-                if (await TryCompletePurchase(productRequestResult.ProductCode, totalInsertedCoins))
-                    break;
+                var purchaseResult = await TryCompletePurchase(
+                    productRequestResult.ProductCode, totalInsertedCoins);
+
+                if (!purchaseResult.IsSuccess)
+                {
+                    DisplaySaleError(purchaseResult.ErrorMessage);
+
+                    productRequestResult = null;
+                    coinRequestResult = null;
+                }
+                else
+                {
+                    break;           
+                }
             }
             catch (Exception ex) 
-                when (ex is ProductNotFoundException || 
-                    ex is InvalidOperationException ||
+                when (ex is ProductNotFoundException ||
                     ex is CoinNotFoundException)
             {
                 logger.LogError(ex, "An error occurred in {Method}.",
@@ -92,9 +103,6 @@ public class CustomerService(
                 productRequestResult = null;
                 continue;
             }
-
-            productRequestResult = null;
-            coinRequestResult = null;
         }
 
         if (totalInsertedCoins.Count > 0)
@@ -248,7 +256,7 @@ public class CustomerService(
         };
     }
 
-    private async Task<bool> TryCompletePurchase(
+    private async Task<OperationResult> TryCompletePurchase(
         string productCode, Dictionary<byte, int> insertedCoins)
     {
         int insertedAmount = insertedCoins
@@ -258,12 +266,11 @@ public class CustomerService(
 
         if (!sellProductResult.IsSuccess || sellProductResult.RemainingToInsert > 0)
         {
-            DisplaySaleError(sellProductResult.ErrorMessage);
-
-            return false;
+            return OperationResult.Failure(sellProductResult.ErrorMessage);
         }
 
-        await productService.DecreaseInventoryAsync(productCode);
+        var operationResult = await productService.DecreaseInventoryAsync(productCode);
+        if (!operationResult.IsSuccess) return operationResult;
 
         var product = await productService.GetByCodeAsync(productCode);
 
@@ -274,7 +281,7 @@ public class CustomerService(
 
         HandleChangeResult(changeResult);
 
-        return true;
+        return OperationResult.Success();
     }
 
     private async Task<SellProductDto> TrySellProductAsync(
@@ -307,9 +314,9 @@ public class CustomerService(
         {
             IsSuccess = false,
             RemainingToInsert = remainingToInsert,
-            ErrorMessage = "[red]Insufficient funds. Insert " +
+            ErrorMessage = "Insufficient funds. Insert " +
                 $"{remainingToInsert / 100m:F2}" +
-                $"{CurrencyConstants.LevaSuffix} more to continue.[/]"
+                $"{CurrencyConstants.LevaSuffix} more to continue."
         };
     }
 

@@ -104,18 +104,24 @@ public class VendorService(
             {
                 try
                 { 
-                    await productService.UpdateQuantityAsync(
-                        new ProductQuantityUpdateDto
-                        {
-                            Code = selection,
-                            Quantity = quantity
-                        });
+                    var operationResult = await productService
+                        .UpdateQuantityAsync(
+                            new ProductQuantityUpdateDto
+                            {
+                                Code = selection,
+                                Quantity = quantity
+                            });
 
-                    ansiConsole.MarkupLine("[green]Quantity successfully updated.[/]");
+                    if (!operationResult.IsSuccess)
+                    {
+                        ansiConsole.MarkupLine($"[red]{operationResult.ErrorMessage}[/]");
+                    }
+                    else
+                    {
+                        ansiConsole.MarkupLine("[green]Quantity successfully updated.[/]");
+                    }
                 }
-                catch (Exception ex) 
-                    when (ex is InvalidOperationException || 
-                        ex is ProductNotFoundException)
+                catch (ProductNotFoundException ex)
                 {
                     LogError(ex, nameof(UpdateProductQuantityAsync));
                 }
@@ -149,14 +155,22 @@ public class VendorService(
             {
                 try
                 {
-                    await productService.UpdatePriceAsync(
-                        new ProductPriceUpdateDto
-                        {
-                            Code = selection,
-                            Price = (int)(price * 100)
-                        });
-                
-                    ansiConsole.MarkupLine("[green]Price successfully updated.[/]");
+                    var operationResult = await productService
+                        .UpdatePriceAsync(
+                            new ProductPriceUpdateDto
+                            {
+                                Code = selection,
+                                Price = (int)(price * 100)
+                            });
+
+                    if (!operationResult.IsSuccess)
+                    {
+                        ansiConsole.MarkupLine($"[red]{operationResult.ErrorMessage}[/]");
+                    }
+                    else
+                    {
+                        ansiConsole.MarkupLine("[green]Price successfully updated.[/]");
+                    }
                 }
                 catch (Exception ex)
                     when (ex is InvalidOperationException ||
@@ -197,21 +211,24 @@ public class VendorService(
                 $"Price: {price}{CurrencyConstants.LevaSuffix}{Environment.NewLine}" +
                 $"Are you sure you want to add this product?"))
             {
-                try
-                {
-                    await productService.AddAsync(new ProductDto
-                    {
-                        Code = code,
-                        Name = name,
-                        PriceInStotinki = (int)(price * 100),
-                        Quantity = quantity
-                    });
 
-                    ansiConsole.MarkupLine("[green]Product successfully added.[/]");
-                }
-                catch (InvalidOperationException ex)
+                var operationResult = await productService
+                    .AddAsync(
+                        new ProductDto
+                        {
+                            Code = code,
+                            Name = name,
+                            PriceInStotinki = (int)(price * 100),
+                            Quantity = quantity
+                        });
+
+                if (!operationResult.IsSuccess)
                 {
-                    LogError(ex, nameof(AddProductAsync));
+                    ansiConsole.MarkupLine($"[red]{operationResult.ErrorMessage}[/]");
+                }
+                else
+                {
+                    ansiConsole.MarkupLine("[green]Product successfully added.[/]");
                 }
             }
 
@@ -369,7 +386,7 @@ public class VendorService(
         }
 
         return ansiConsole.Prompt(
-            new TextPrompt<byte>($"Enter new quantity{productDescription}:")
+            new TextPrompt<byte>($"Enter quantity{productDescription}:")
             .Validate(input =>
                 input >= ProductConstants.MinQuantity &&
                 input <= ProductConstants.MaxQuantity)
@@ -390,7 +407,7 @@ public class VendorService(
         }
 
         return ansiConsole.Prompt(
-            new TextPrompt<decimal>($"Enter new price (in leva){productDescription}:")
+            new TextPrompt<decimal>($"Enter price (in leva){productDescription}:")
             .Validate(input =>
             {
                 if (input < 0)

@@ -11,15 +11,15 @@ public interface IProductService
 
     Task<IEnumerable<string>> GetAllCodesAsync();
 
-    Task DecreaseInventoryAsync(string code);
+    Task<OperationResult> DecreaseInventoryAsync(string code);
 
-    Task UpdateQuantityAsync(ProductQuantityUpdateDto product);
+    Task<OperationResult> UpdateQuantityAsync(ProductQuantityUpdateDto product);
 
-    Task UpdatePriceAsync(ProductPriceUpdateDto product);
+    Task<OperationResult> UpdatePriceAsync(ProductPriceUpdateDto product);
 
     Task RemoveAsync(string code);
 
-    Task AddAsync(ProductDto product);
+    Task<OperationResult> AddAsync(ProductDto product);
 
     Task<bool> CanAddAsync();
 }

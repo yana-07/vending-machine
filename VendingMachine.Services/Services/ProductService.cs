@@ -39,42 +39,34 @@ public class ProductService(
             .ToListAsync();
     }
   
-    public async Task DecreaseInventoryAsync(string code)
+    public async Task<OperationResult> DecreaseInventoryAsync(string code)
     {
         var product = await GetByCodeAsync(code);
 
         if (product.Quantity == 0)
         {
-            throw new InvalidOperationException(
+            return OperationResult.Failure(
                 $"Product with code {code} is out of stock.");
         }
 
         product.Quantity--;
 
         await repository.SaveChangesAsync();
+
+        return OperationResult.Success();
     }
 
-    public async Task UpdateQuantityAsync(ProductQuantityUpdateDto product)
+    public async Task<OperationResult> UpdateQuantityAsync(
+        ProductQuantityUpdateDto product)
     {
-        if (product.Quantity > ProductConstants.MaxQuantity)
-        {
-            throw new InvalidOperationException(
-                $"Product quantity cannot exceed {ProductConstants.MaxQuantity}");
-        }
-
-        // Check is currently redundand due to product quantity's
-        // numeric data type (byte is unsigned) and minimum quantity = 0.
-        // Remains in case minimum quantity is changed in the future.
-        // Cannot be tested at this point.
-        if (product.Quantity < ProductConstants.MinQuantity)
-        {
-            throw new InvalidOperationException(
-                $"Product quantity cannot be less than {ProductConstants.MinQuantity}.");
-        }
+        var validationResult = ValidateQuantity(product.Quantity);
+        if (!validationResult.IsSuccess) return validationResult;
 
         var existingProduct = await GetByCodeAsync(product.Code);
         existingProduct.Quantity = product.Quantity;
         await repository.SaveChangesAsync();
+
+        return OperationResult.Success();
     }
 
     public async Task RemoveAsync(string code)
@@ -84,37 +76,22 @@ public class ProductService(
         await repository.SaveChangesAsync();
     }
 
-    public async Task AddAsync(ProductDto product)
+    public async Task<OperationResult> AddAsync(ProductDto product)
     {
         var existingProduct = await repository.FirstOrDefaultAsync(
             productEntity => productEntity.Code == product.Code);
 
         if (existingProduct is not null)
         {
-            throw new InvalidOperationException(
+            return OperationResult.Failure(
                 $"Product with code {product.Code} already exists.");
         }
 
-        if (product.Quantity > ProductConstants.MaxQuantity)
-        {
-            throw new InvalidOperationException(
-                $"Product quantity cannot exceed {ProductConstants.MaxQuantity}");
-        }
+        var validationResult = ValidateQuantity(product.Quantity);
+        if (!validationResult.IsSuccess) return validationResult;
 
-        // Check is currently redundand due to product quantity's
-        // numeric data type (byte is unsigned) and minimum quantity = 0.
-        // Remains in case minimum quantity is changed in the future.
-        // Cannot be tested at this point.
-        if (product.Quantity < ProductConstants.MinQuantity)
-        {
-            throw new InvalidOperationException(
-                $"Product quantity cannot be less than {ProductConstants.MinQuantity}.");
-        }
-
-        if (product.PriceInStotinki < 0)
-        {
-            throw new InvalidOperationException("Product price cannot be negative.");
-        }
+        validationResult = ValidatePrice(product.PriceInStotinki);
+        if (!validationResult.IsSuccess) return validationResult;
 
         repository.Add(
             new Product
@@ -126,18 +103,21 @@ public class ProductService(
             });
 
         await repository.SaveChangesAsync();
+
+        return OperationResult.Success();
     }
 
-    public async Task UpdatePriceAsync(ProductPriceUpdateDto product)
+    public async Task<OperationResult> UpdatePriceAsync(
+        ProductPriceUpdateDto product)
     {
-        if (product.Price < 0)
-        {
-            throw new InvalidOperationException($"Product price cannot be negative.");
-        }
+        var validationResult = ValidatePrice(product.Price);
+        if (!validationResult.IsSuccess) return validationResult;
 
         var existingProduct = await GetByCodeAsync(product.Code);
         existingProduct.PriceInStotinki = product.Price;
         await repository.SaveChangesAsync();
+
+        return OperationResult.Success();
     }
 
     public async Task<bool> CanAddAsync()
@@ -145,5 +125,39 @@ public class ProductService(
         var productsCount = await repository.AllAsNoTracking().CountAsync();
 
         return productsCount < VendingMachineConstants.SlotLimit;
+    }
+
+    private static OperationResult ValidateQuantity(int quantity)
+    {
+        if (quantity > ProductConstants.MaxQuantity)
+        {
+            return OperationResult.Failure(
+                $"Product quantity cannot exceed " +
+                $"{ProductConstants.MaxQuantity}.");
+        }
+
+        // Check is currently redundand due to product quantity's
+        // numeric data type (byte is unsigned) and minimum quantity = 0.
+        // Remains in case minimum quantity is changed in the future.
+        // Cannot be tested at this point.
+        if (quantity < ProductConstants.MinQuantity)
+        {
+            OperationResult.Failure(
+                $"Product quantity cannot be less than " +
+                $"{ProductConstants.MinQuantity}.");
+        }
+
+        return OperationResult.Success();
+    }
+
+    private static OperationResult ValidatePrice(int priceInStotinki)
+    {
+        if (priceInStotinki < 0)
+        {
+            return OperationResult.Failure(
+                "Product price cannot be negative.");
+        }
+
+        return OperationResult.Success();
     }
 }

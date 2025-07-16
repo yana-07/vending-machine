@@ -187,7 +187,7 @@ namespace VendingMachine.Tests
         [TestCase(7, "02", "Lorem", 120, 0)]
         [TestCase(8, "B3", "Ipsum", 50, 0)]
         [TestCase(8, "04", "Dolor", 90, 0)]
-        public void DecreaseInventoryAsync_ShallException_WhenProductIsOutOfStock
+        public async Task DecreaseInventoryAsync_ShallReturnFailureOperationResult_WhenProductIsOutOfStock
             (int id, string code, string name, int price, byte quantity)
         {
             var product = new Product
@@ -204,10 +204,14 @@ namespace VendingMachine.Tests
                     It.IsAny<Expression<Func<Product, bool>>>()))
                 .ReturnsAsync(product);
 
-            var ex = Assert.ThrowsAsync<InvalidOperationException>(
-                async () => await _cut.DecreaseInventoryAsync(code));
+            var operationResult = await _cut.DecreaseInventoryAsync(code);
 
-            Assert.That(ex.Message, Is.EqualTo($"Product with code {code} is out of stock."));
+            Assert.Multiple(() =>
+            {
+                Assert.That(operationResult.IsSuccess, Is.False);
+                Assert.That(operationResult.ErrorMessage,
+                    Is.EqualTo($"Product with code {code} is out of stock."));
+            });
         }
 
         [TestCase("02", ProductConstants.MinQuantity)]
@@ -246,7 +250,7 @@ namespace VendingMachine.Tests
         [TestCase(ProductConstants.MaxQuantity + 1)]
         [TestCase(ProductConstants.MaxQuantity + 5)]
         [TestCase(ProductConstants.MaxQuantity + 10)]
-        public void UpdateQuantityAsync_ShallThrowException_WhenQuantityIsAboveMaximum(byte quantity)
+        public async Task UpdateQuantityAsync_ShallReturnFailureOperationResult_WhenQuantityIsAboveMaximum(byte quantity)
         {
             var product = new Product
             {
@@ -269,12 +273,14 @@ namespace VendingMachine.Tests
                 Quantity = quantity
             };
 
-            var ex = Assert.ThrowsAsync<InvalidOperationException>(
-                async () => await _cut.UpdateQuantityAsync(quantityUpdateDto));
+            var operationResult = await _cut.UpdateQuantityAsync(quantityUpdateDto);
 
-            Assert.That(
-                ex.Message, 
-                Is.EqualTo($"Product quantity cannot exceed {ProductConstants.MaxQuantity}"));
+            Assert.Multiple(() =>
+            {
+                Assert.That(operationResult.IsSuccess, Is.False);
+                Assert.That(operationResult.ErrorMessage,
+                    Is.EqualTo($"Product quantity cannot exceed {ProductConstants.MaxQuantity}."));
+            });
         }
 
         [TestCase(7, "02", "Lorem", 120, 0)]
@@ -322,7 +328,7 @@ namespace VendingMachine.Tests
         [TestCase("02")]
         [TestCase("B3")]
         [TestCase("04")]
-        public void AddAsync_ShallThrowException_ForExistingProduct(string code)
+        public async Task AddAsync_ShallReturnFailureOperationResult_ForExistingProduct(string code)
         {
             var product = new Product
             {
@@ -346,10 +352,14 @@ namespace VendingMachine.Tests
                 Quantity = 8
             };
 
-            var ex = Assert.ThrowsAsync<InvalidOperationException>(
-                async () => await _cut.AddAsync(productDto));
+            var  operationResult = await _cut.AddAsync(productDto);
 
-            Assert.That(ex.Message, Is.EqualTo($"Product with code {code} already exists."));
+            Assert.Multiple(() =>
+            {
+                Assert.That(operationResult.IsSuccess, Is.False);
+                Assert.That(operationResult.ErrorMessage,
+                    Is.EqualTo($"Product with code {code} already exists."));
+            });
 
             _repositoryMock.Verify(repo => repo.Delete(It.IsAny<Product>()), Times.Never);
             _repositoryMock.Verify(repo => repo.SaveChangesAsync(), Times.Never);
@@ -358,7 +368,7 @@ namespace VendingMachine.Tests
         [TestCase(ProductConstants.MaxQuantity + 1)]
         [TestCase(ProductConstants.MaxQuantity + 5)]
         [TestCase(ProductConstants.MaxQuantity + 10)]
-        public void AddAsync_ShallThrowException_WhenQuantityIsAboveMaximum(byte quantity)
+        public async Task AddAsync_ShallReturnFailureOperationResult_WhenQuantityIsAboveMaximum(byte quantity)
         {
             _repositoryMock.Setup(
                 mock => mock.FirstOrDefaultAsync(
@@ -373,18 +383,20 @@ namespace VendingMachine.Tests
                 Quantity = quantity
             };
 
-            var ex = Assert.ThrowsAsync<InvalidOperationException>(
-                async () => await _cut.AddAsync(productDto));
+            var operationResult = await _cut.AddAsync(productDto);
 
-            Assert.That(
-                ex.Message, 
-                Is.EqualTo($"Product quantity cannot exceed {ProductConstants.MaxQuantity}"));
+            Assert.Multiple(() =>
+            {
+                Assert.That(operationResult.IsSuccess, Is.False);
+                Assert.That(operationResult.ErrorMessage,
+                    Is.EqualTo($"Product quantity cannot exceed {ProductConstants.MaxQuantity}."));
+            });
         }
 
         [TestCase(-1)]
         [TestCase(-122)]
         [TestCase(-250)]
-        public void AddAsync_ShallThrowException_ForNegativePrice(int price)
+        public async Task AddAsync_ShallReturnFailureOperationResult_ForNegativePrice(int price)
         {
             _repositoryMock.Setup(
                 mock => mock.FirstOrDefaultAsync(
@@ -399,12 +411,14 @@ namespace VendingMachine.Tests
                 Quantity = 7
             };
 
-            var ex = Assert.ThrowsAsync<InvalidOperationException>(
-                async () => await _cut.AddAsync(productDto));
+            var operationResult = await _cut.AddAsync(productDto);
 
-            Assert.That(
-                ex.Message,
-                Is.EqualTo("Product price cannot be negative."));
+            Assert.Multiple(() =>
+            {
+                Assert.That(operationResult.IsSuccess, Is.False);
+                Assert.That(operationResult.ErrorMessage,
+                    Is.EqualTo("Product price cannot be negative."));
+            });
         }
 
         [TestCase("B5", "Lorem", 120, 1)]
@@ -466,7 +480,7 @@ namespace VendingMachine.Tests
         [TestCase("02", -1)]
         [TestCase("B3", -70)]
         [TestCase("04", -150)]
-        public void UpdatePriceAsync_ShallThrowException_ForNegativePrice
+        public async Task UpdatePriceAsync_ShallReturnFailureOperationResult_ForNegativePrice
             (string code, int price)
         {
             var product = new Product
@@ -489,12 +503,14 @@ namespace VendingMachine.Tests
                 Price = price
             };
 
-            var ex = Assert.ThrowsAsync<InvalidOperationException>(
-                async () => await _cut.UpdatePriceAsync(priceUpdateDto));
+            var operationResult = await _cut.UpdatePriceAsync(priceUpdateDto);
 
-            Assert.That(
-                ex.Message,
-                Is.EqualTo("Product price cannot be negative."));
+            Assert.Multiple(() =>
+            {
+                Assert.That(operationResult.IsSuccess, Is.False);
+                Assert.That(operationResult.ErrorMessage,
+                    Is.EqualTo("Product price cannot be negative."));
+            });
         }
 
         [Test]
