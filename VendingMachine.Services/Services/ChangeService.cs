@@ -112,7 +112,7 @@ public class ChangeService(ICoinService coinService)
     {
         int remainingChange = changeToreturn;
 
-        var coins = await coinService.GetAllDescendingAsNoTrackingAsync();
+        var coins = await coinService.GetAllAsNoTrackingAsync(coin => coin.Value);
 
         Dictionary<byte, int> returnedCoins = [];
 
@@ -134,7 +134,17 @@ public class ChangeService(ICoinService coinService)
             }
         }
 
-        await coinService.DecreaseInventoryAsync(returnedCoins);
+        var operationResult = await coinService
+            .DecreaseInventoryAsync(returnedCoins);
+
+        if (!operationResult.IsSuccess)
+        {
+            return new ChangeDto 
+            { 
+                RemainingChange = changeToreturn, 
+                ReturnedCoins = [] 
+            };
+        }
 
         return new ChangeDto
         {

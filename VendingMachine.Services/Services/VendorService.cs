@@ -172,9 +172,7 @@ public class VendorService(
                         ansiConsole.MarkupLine("[green]Price successfully updated.[/]");
                     }
                 }
-                catch (Exception ex)
-                    when (ex is InvalidOperationException ||
-                        ex is ProductNotFoundException)
+                catch (ProductNotFoundException ex)
                 {
                     LogError(ex, nameof(UpdateProductPriceAsync));
                 }
@@ -299,12 +297,7 @@ public class VendorService(
                 {
                     try
                     {
-                        await coinService.DepositAsync(
-                            new CoinDto
-                            {
-                                Value = coinValue,
-                                Quantity = quantity
-                            });
+                        await coinService.DepositAsync(coinValue, quantity);
 
                         var coinsLabel = quantity > 1 ? "Coins" : "Coin";
 
@@ -344,18 +337,19 @@ public class VendorService(
                 {
                     try
                     {
-                        await coinService.DecreaseInventoryAsync(
-                            new CoinDto
-                            {
-                                Value = coinValue,
-                                Quantity = quantity
-                            });
+                        var operationResult = await coinService
+                            .DecreaseInventoryAsync(coinValue, quantity);
 
-                        ansiConsole.MarkupLine($"[green]Coins successfully collected.[/]");
+                        if (operationResult.IsSuccess)
+                        {
+                            ansiConsole.MarkupLine($"[green]Coins successfully collected.[/]");
+                        }
+                        else
+                        {
+                            ansiConsole.MarkupLine($"[red]{operationResult.ErrorMessage}[/]");
+                        }
                     }
-                    catch (Exception ex) when (
-                        ex is CoinNotFoundException || 
-                        ex is InvalidOperationException)
+                    catch (CoinNotFoundException ex)
                     {
                         LogError(ex, nameof(CollectCoinsAsync));
                     }

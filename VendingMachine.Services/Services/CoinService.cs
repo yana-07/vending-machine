@@ -1,4 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using System.Linq.Expressions;
 using VendingMachine.Common.Constants;
 using VendingMachine.Common.Exceptions;
 using VendingMachine.Data.Models;
@@ -10,92 +11,118 @@ namespace VendingMachine.Services.Services;
 public class CoinService(
     IRepository<Coin> repository) : ICoinService
 {
+    public async Task<IEnumerable<Coin>> GetAllAsync(
+    Expression<Func<Coin, bool>>? wherePredicate = null)
+    {
+        var coins = repository.AllAsNoTracking();
+
+        if (wherePredicate is not null)
+        {
+            coins = coins.Where(wherePredicate);
+        }
+
+        return await coins.ToListAsync();
+    }
+
+    public async Task<IEnumerable<CoinDto>> GetAllAsNoTrackingAsync(
+        Expression<Func<Coin, byte>>? orderByDescExpression = null)
+    {
+        var coins = repository.AllAsNoTracking();
+
+        if (orderByDescExpression is not null)
+        {
+            coins = coins.OrderByDescending(orderByDescExpression);
+        }
+
+        return await coins
+            .Select(coin => new CoinDto
+            {
+                Value = coin.Value,
+                Quantity = coin.Quantity
+            })
+            .ToListAsync();
+    }
+
     public async Task DepositAsync(Dictionary<byte, int> coins)
     {
-        foreach (var (value, quantity) in coins)
-        {
-            var coinToUpdate = await GetByValueAsync(value);
+        var coinValues = coins.Keys.ToList();
 
-            coinToUpdate.Quantity += quantity;
+        var coinsToUpdate = await GetAllAsync(
+            coin => coinValues.Contains(coin.Value));
+
+        var invalidCoins = coinValues.Except(
+            coinsToUpdate.Select(coin => coin.Value));
+
+        if (invalidCoins.Any())
+        {
+            throw new CoinNotFoundException(invalidCoins);
+        }
+
+        foreach (var coinToUpdate in coinsToUpdate)
+        {
+            coinToUpdate.Quantity += coins[coinToUpdate.Value];
         }
 
         await repository.SaveChangesAsync();
     }
 
-    public async Task DepositAsync(CoinDto coin)
+    public async Task DepositAsync(byte value, int quantity)
     {
-        var coinToUpdate = await GetByValueAsync(coin.Value);
+        var coinToUpdate = await GetByValueAsync(value);
 
-        coinToUpdate.Quantity += coin.Quantity;
+        coinToUpdate.Quantity += quantity;
 
         await repository.SaveChangesAsync();
     }
 
-    public async Task DecreaseInventoryAsync(Dictionary<byte, int> coins)
+    public async Task<OperationResult> DecreaseInventoryAsync(
+        Dictionary<byte, int> coins)
     {
-        foreach (var (value, quantity) in coins)
+        var coinValues = coins.Keys;
+
+        var coinsToUpdate = await GetAllAsync(
+           coin => coinValues.Contains(coin.Value));
+
+        var invalidCoins = coinValues.Except(
+            coinsToUpdate.Select(coin => coin.Value));
+
+        if (invalidCoins.Any())
         {
-            var coinToUpdate = await GetByValueAsync(value);
+            throw new CoinNotFoundException(invalidCoins);
+        }
 
-            if (coinToUpdate.Quantity - quantity < 0)
-            {
-                throw new InvalidOperationException(
-                    $"Cannot decrease coin inventory " +
-                    $"by {quantity} " +
-                    $"(available: {coinToUpdate.Quantity}).");
-            }
+        foreach (var coinToUpdate in coinsToUpdate)
+        {
+            var quantityValidationResult = ValidateQuantity(
+                coinToUpdate.Quantity, coins[coinToUpdate.Value]);
 
-            coinToUpdate.Quantity -= quantity;
+            if (!quantityValidationResult.IsSuccess)
+                return quantityValidationResult;
+
+            coinToUpdate.Quantity -= coins[coinToUpdate.Value];
         }
 
         await repository.SaveChangesAsync();
+
+        return OperationResult.Success();
     }
 
-    public async Task DecreaseInventoryAsync(CoinDto coin)
+    public async Task<OperationResult> DecreaseInventoryAsync(
+        byte value, int quantity)
     {
-        var coinToUpdate = await GetByValueAsync(coin.Value);
+        var coinToUpdate = await GetByValueAsync(value);
 
-        if (coinToUpdate.Quantity - coin.Quantity < 0)
-        {
-            throw new InvalidOperationException(
-                $"Cannot decrease coin inventory " +
-                $"by {coin.Quantity} " +
-                $"(available: {coinToUpdate.Quantity}).");
-        }
+        var quantityValidationResult = ValidateQuantity(
+            coinToUpdate.Quantity, quantity);
 
-        coinToUpdate.Quantity -= coin.Quantity;
+        if (!quantityValidationResult.IsSuccess) 
+            return quantityValidationResult;
+
+        coinToUpdate.Quantity -= quantity;
 
         await repository.SaveChangesAsync();
-    }
 
-    private async Task<Coin> GetByValueAsync(byte value)
-    {
-        return await repository
-            .FirstOrDefaultAsync(coinEntity => coinEntity.Value == value) ??
-            throw new CoinNotFoundException(value);
-    }
-
-    public async Task<IEnumerable<CoinDto>> GetAllDescendingAsNoTrackingAsync()
-    {
-        return await repository.AllAsNoTracking()
-            .OrderByDescending(coin => coin.Value)
-            .Select(coin => new CoinDto
-            {
-                Value = coin.Value,
-                Quantity = coin.Quantity
-            })
-            .ToListAsync();
-    }
-
-    public async Task<IEnumerable<CoinDto>> GetAllAsNoTrackingAsync()
-    {
-        return await repository.AllAsNoTracking()
-            .Select(coin => new CoinDto
-            {
-                Value = coin.Value,
-                Quantity = coin.Quantity
-            })
-            .ToListAsync();
+        return OperationResult.Success();
     }
 
     public byte ParseCoinValue(string value)
@@ -116,5 +143,26 @@ public class CoinService(
         }
 
         return valueAsByte;
+    }
+
+    private async Task<Coin> GetByValueAsync(byte value)
+    {
+        return await repository
+            .FirstOrDefaultAsync(coinEntity => coinEntity.Value == value) ??
+            throw new CoinNotFoundException(value);
+    }
+
+    private static OperationResult ValidateQuantity(
+        int current, int decreaseBy)
+    {
+        if (current - decreaseBy < 0)
+        {
+            return OperationResult.Failure(
+                $"Cannot decrease coin inventory " +
+                $"by {decreaseBy} " +
+                $"(available: {current}).");
+        }
+
+        return OperationResult.Success();
     }
 }
