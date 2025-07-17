@@ -1,6 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using System.Linq.Expressions;
-using VendingMachine.Common.Constants;
 using VendingMachine.Common.Exceptions;
 using VendingMachine.Data.Models;
 using VendingMachine.Data.Repositories;
@@ -14,7 +13,7 @@ public class CoinService(
     public async Task<IEnumerable<Coin>> GetAllAsync(
         Expression<Func<Coin, bool>>? wherePredicate = null)
     {
-        var coins = repository.AllAsNoTracking();
+        var coins = repository.All();
 
         if (wherePredicate is not null)
         {
