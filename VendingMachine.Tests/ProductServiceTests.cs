@@ -88,7 +88,7 @@ namespace VendingMachine.Tests
                 new Product { Id = 8, Code = "03", Name = "Test", PriceInStotinki = 170, Quantity = 10 },
                 new Product { Id = 12, Code = "05", Name = "Name", PriceInStotinki = 100, Quantity = 7 }];
 
-            var asyncMock = expectedProducts.AsQueryable().BuildMock();
+            var asyncMock = expectedProducts.BuildMock();
 
             _repositoryMock.Setup(
                 mock => mock.AllAsNoTracking())
