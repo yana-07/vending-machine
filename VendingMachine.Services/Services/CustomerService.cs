@@ -117,34 +117,36 @@ public class CustomerService(
     {
         var coinRequestResult = new CoinRequestResultDto();
 
-        var coins = await coinService.GetAllAsNoTrackingAsync();
+        var coinDenominationToValueMap = await coinService
+            .GetAllAsDenominationToValueMap();
 
         while (true)
         {
             var selection = PromptForCoin(
-                coins.Select(coin => coin.Denomination),
+                coinDenominationToValueMap.Keys,
                 alreadyInsertedAmount,
                 coinRequestResult.InsertedCoins.Count);
 
-            UpdateCoinRequestResultIfSpecialCommandSelected(selection, coinRequestResult);
+            UpdateCoinRequestResultIfSpecialCommandSelected(
+                selection, coinRequestResult);
 
             if (coinRequestResult.IsCancelled || coinRequestResult.IsFinished)
             {
                 return coinRequestResult;
             }
 
-            var coinValue = coinService.ParseCoinValue(selection);
-
-            if (CoinConstants.AllowedCoins.Contains(coinValue))
+            if (!coinDenominationToValueMap.TryGetValue(selection, out var coinValue))
             {
-                coinRequestResult.IsValid = true;
-                UpdateCurrentlyInsertedCoins(coinRequestResult, coinValue);
+                ansiConsole.MarkupLine($"[red]Invalid coin selection: {selection}[/]");
+                continue;
             }
 
-            var totalInserted = 
-                alreadyInsertedAmount + 
-                coinRequestResult.InsertedCoins
+            coinRequestResult.IsValid = true;
+            UpdateCurrentlyInsertedCoins(coinRequestResult, coinValue);
+
+            var currentlyInserted = coinRequestResult.InsertedCoins
                     .Sum(coin => coin.Key * coin.Value);
+            var totalInserted = alreadyInsertedAmount + currentlyInserted;
 
             DisplayTotalInserted(totalInserted);
         }

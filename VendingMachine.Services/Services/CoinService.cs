@@ -12,7 +12,7 @@ public class CoinService(
     IRepository<Coin> repository) : ICoinService
 {
     public async Task<IEnumerable<Coin>> GetAllAsync(
-    Expression<Func<Coin, bool>>? wherePredicate = null)
+        Expression<Func<Coin, bool>>? wherePredicate = null)
     {
         var coins = repository.AllAsNoTracking();
 
@@ -41,6 +41,16 @@ public class CoinService(
                 Quantity = coin.Quantity
             })
             .ToListAsync();
+    }
+
+    public async Task<Dictionary<string, byte>> GetAllAsDenominationToValueMap()
+    {
+        var coins = await GetAllAsNoTrackingAsync();
+
+        return coins
+            .ToDictionary(
+                coin => coin.Denomination,
+                coin => coin.Value);
     }
 
     public async Task DepositAsync(Dictionary<byte, int> coins)
@@ -123,26 +133,6 @@ public class CoinService(
         await repository.SaveChangesAsync();
 
         return OperationResult.Success();
-    }
-
-    public byte ParseCoinValue(string value)
-    {
-        string valueWithoutCurrency = value
-            .Replace(CurrencyConstants.LevaSuffix, string.Empty)
-            .Replace(CurrencyConstants.StotinkiSuffix, string.Empty);
-
-        if (!byte.TryParse(valueWithoutCurrency, out var valueAsByte))
-        {
-            throw new InvalidOperationException(
-                $"Invalid coin value: {value}.");
-        }
-
-        if (value.Contains(CurrencyConstants.LevaSuffix))
-        {
-            valueAsByte *= 100;
-        }
-
-        return valueAsByte;
     }
 
     private async Task<Coin> GetByValueAsync(byte value)

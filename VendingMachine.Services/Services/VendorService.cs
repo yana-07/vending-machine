@@ -274,10 +274,11 @@ public class VendorService(
 
     private async Task DepositCoinsAsync()
     {
-        var coins = await coinService.GetAllAsNoTrackingAsync();
+        var coinDenominationToValueMap = await coinService
+            .GetAllAsDenominationToValueMap();
 
         string[] choices = [
-            .. coins.Select(coin => coin.Denomination),
+            .. coinDenominationToValueMap.Keys,
             nameof(VendorCommand.Back)];
 
         while (true)
@@ -286,27 +287,28 @@ public class VendorService(
 
             if (selection == nameof(VendorCommand.Back)) break;
 
-            var coinValue = coinService.ParseCoinValue(selection);
-
-            if (CoinConstants.AllowedCoins.Contains(coinValue))
+            if (!coinDenominationToValueMap.TryGetValue(selection, out var coinValue))
             {
-                var quantity = PromptForCoinQuantity();
+                ansiConsole.MarkupLine($"[red]Invalid coin selection: {selection}[/]");
+                continue;
+            }
 
-                if (IsActionConfirmed($"Are you sure you want " +
-                    $"to deposit {quantity}x{selection}?"))
+            var quantity = PromptForCoinQuantity();
+
+            if (IsActionConfirmed($"Are you sure you want " +
+                $"to deposit {quantity}x{selection}?"))
+            {
+                try
                 {
-                    try
-                    {
-                        await coinService.DepositAsync(coinValue, quantity);
+                    await coinService.DepositAsync(coinValue, quantity);
 
-                        var coinsLabel = quantity > 1 ? "Coins" : "Coin";
+                    var coinsLabel = quantity > 1 ? "Coins" : "Coin";
 
-                        ansiConsole.MarkupLine($"[green]{coinsLabel} successfully deposited.[/]");
-                    }
-                    catch (CoinNotFoundException ex)
-                    {
-                        LogError(ex, nameof(DepositCoinsAsync));                       
-                    }
+                    ansiConsole.MarkupLine($"[green]{coinsLabel} successfully deposited.[/]");
+                }
+                catch (CoinNotFoundException ex)
+                {
+                    LogError(ex, nameof(DepositCoinsAsync));                       
                 }
             }
         }
@@ -314,10 +316,11 @@ public class VendorService(
 
     private async Task CollectCoinsAsync()
     {
-        var coins = await coinService.GetAllAsNoTrackingAsync();
+        var coinDenominationToValueMap = await coinService
+            .GetAllAsDenominationToValueMap();
 
         string[] choices = [
-            .. coins.Select(coin => coin.Denomination),
+            .. coinDenominationToValueMap.Keys,
             nameof(VendorCommand.Back)];
 
         while (true)
@@ -326,33 +329,34 @@ public class VendorService(
 
             if (selection == nameof(VendorCommand.Back)) break;
 
-            var coinValue = coinService.ParseCoinValue(selection);
-
-            if (CoinConstants.AllowedCoins.Contains(coinValue))
+            if (!coinDenominationToValueMap.TryGetValue(selection, out var coinValue))
             {
-                var quantity = PromptForCoinQuantity();
+                ansiConsole.MarkupLine($"[red]Invalid coin selection: {selection}[/]");
+                continue;
+            }
 
-                if (IsActionConfirmed($"Are you sure you want " +
-                    $"to collect {quantity}x{selection}?"))
+            var quantity = PromptForCoinQuantity();
+
+            if (IsActionConfirmed($"Are you sure you want " +
+                $"to collect {quantity}x{selection}?"))
+            {
+                try
                 {
-                    try
-                    {
-                        var operationResult = await coinService
-                            .DecreaseInventoryAsync(coinValue, quantity);
+                    var operationResult = await coinService
+                        .DecreaseInventoryAsync(coinValue, quantity);
 
-                        if (operationResult.IsSuccess)
-                        {
-                            ansiConsole.MarkupLine($"[green]Coins successfully collected.[/]");
-                        }
-                        else
-                        {
-                            ansiConsole.MarkupLine($"[red]{operationResult.ErrorMessage}[/]");
-                        }
-                    }
-                    catch (CoinNotFoundException ex)
+                    if (operationResult.IsSuccess)
                     {
-                        LogError(ex, nameof(CollectCoinsAsync));
+                        ansiConsole.MarkupLine($"[green]Coins successfully collected.[/]");
                     }
+                    else
+                    {
+                        ansiConsole.MarkupLine($"[red]{operationResult.ErrorMessage}[/]");
+                    }
+                }
+                catch (CoinNotFoundException ex)
+                {
+                    LogError(ex, nameof(CollectCoinsAsync));
                 }
             }
         }

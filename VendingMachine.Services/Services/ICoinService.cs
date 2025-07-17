@@ -12,6 +12,8 @@ public interface ICoinService
     Task<IEnumerable<CoinDto>> GetAllAsNoTrackingAsync(
         Expression<Func<Coin, byte>>? orderByDescExpression = null);
 
+    Task<Dictionary<string, byte>> GetAllAsDenominationToValueMap();
+
     Task DepositAsync(Dictionary<byte, int> coins);
 
     Task DepositAsync(byte value, int quantity);
@@ -21,6 +23,4 @@ public interface ICoinService
 
     Task<OperationResult> DecreaseInventoryAsync(
         byte value, int quantity);
-
-    byte ParseCoinValue(string value);
 }
